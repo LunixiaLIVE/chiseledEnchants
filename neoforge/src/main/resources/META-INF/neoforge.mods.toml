@@ -1,0 +1,26 @@
+modLoader = "javafml"
+loaderVersion = "[1,)"
+license = "MIT"
+
+[[mixins]]
+    config = "chiseledenchants.common.mixins.json"
+
+[[mods]]
+    modId = "chiseledenchants"
+    version = "${version}"
+    displayName = "chiseledEnchants"
+    description = "Targeted enchanting: stock chiseled bookshelves with single-enchant books to guarantee specific enchantments at the enchanting table."
+
+[[dependencies.chiseledenchants]]
+    modId = "neoforge"
+    type = "required"
+    versionRange = "[26.1,26.2)"
+    ordering = "NONE"
+    side = "BOTH"
+
+[[dependencies.chiseledenchants]]
+    modId = "minecraft"
+    type = "required"
+    versionRange = "[26.1,26.2)"
+    ordering = "NONE"
+    side = "BOTH"

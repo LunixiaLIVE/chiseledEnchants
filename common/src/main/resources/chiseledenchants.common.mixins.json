@@ -1,0 +1,12 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "net.lunix.chiseledenchants.mixin",
+  "compatibilityLevel": "JAVA_25",
+  "mixins": [
+    "EnchantmentMenuMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}
