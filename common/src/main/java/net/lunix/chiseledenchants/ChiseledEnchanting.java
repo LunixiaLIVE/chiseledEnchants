@@ -1,8 +1,10 @@
 package net.lunix.chiseledenchants;
 
+import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.TextColor;
 import net.minecraft.core.NonNullList;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.Registries;
@@ -402,13 +404,20 @@ public final class ChiseledEnchanting {
         return shelfCensus(level, tablePos)[0] > 0;
     }
 
-    /** The crafted gate: an enchanting table whose custom name matches {@code specialTableName} (case-insensitive). */
+    /**
+     * The crafted gate: an enchanting table whose custom name matches {@code specialTableName}. When
+     * {@code craftOnlyTable}, the name must also carry the RARE (aqua) color the recipe stamps — a vanilla
+     * anvil can't color a rename, so only the crafted table qualifies.
+     */
     private static boolean isSpecialTable(Level level, BlockPos tablePos, ModConfig cfg) {
         if (!(level.getBlockEntity(tablePos) instanceof EnchantingTableBlockEntity be)) return false;
         Component name = be.getCustomName();
         if (name == null) return false;
         String want = cfg.specialTableName == null ? "" : cfg.specialTableName.trim();
-        return !want.isEmpty() && name.getString().trim().equalsIgnoreCase(want);
+        if (want.isEmpty() || !name.getString().trim().equalsIgnoreCase(want)) return false;
+        if (!cfg.craftOnlyTable) return true;                              // any-color name accepted
+        TextColor color = name.getStyle().getColor();                     // recipe stamps rare/aqua; anvil can't
+        return color != null && color.equals(TextColor.fromLegacyFormat(ChatFormatting.AQUA));
     }
 
     /** Mixed = chiseled AND regular shelves both present → error (blank the table). */

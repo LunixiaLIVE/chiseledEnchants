@@ -42,6 +42,12 @@ public class ModConfig {
      * Obtain the table via the recipe, or by anvil-renaming any enchanting table to this exact text.
      */
     public String specialTableName = "Chiseled Enchanter";
+    /**
+     * Craft-only: require the table's name to carry the RARE (aqua) color the recipe stamps — a vanilla anvil
+     * can't add color to a rename, so it can't forge the table. false = any table named specialTableName works
+     * (anvil-rename allowed). Default true.
+     */
+    public boolean craftOnlyTable = true;
 
     // ── Scan geometry (§2) — how much of the surrounding shelves the mod reads for targeting.
     //    Vanilla POWER is untouched (its own fixed ring, capped at 15); this only widens book capacity. ──

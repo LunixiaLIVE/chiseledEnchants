@@ -77,10 +77,11 @@ public final class ChiseledCommands {
         src.sendSuccess(() -> Component.literal("Targeted enchanting via chiseled bookshelves.")
                 .withStyle(ChatFormatting.GRAY), false);
         if (cfg.requireSpecialTable && cfg.specialTableName != null && !cfg.specialTableName.isBlank()) {
+            String how = cfg.craftOnlyTable ? "crafted" : "crafted or anvil-renamed";
             src.sendSuccess(() -> Component.literal("Enchant at the \"")
                     .withStyle(ChatFormatting.WHITE)
                     .append(Component.literal(cfg.specialTableName.trim()).withStyle(ChatFormatting.AQUA))
-                    .append(Component.literal("\" table (crafted or anvil-renamed) with chiseled shelves.")
+                    .append(Component.literal("\" table (" + how + ") with chiseled shelves.")
                             .withStyle(ChatFormatting.WHITE)), false);
         }
         if (cfg.guideEnabled && cfg.guideKeyword != null && !cfg.guideKeyword.isBlank()) {
