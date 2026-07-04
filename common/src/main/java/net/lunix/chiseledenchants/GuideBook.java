@@ -44,6 +44,7 @@ public final class GuideBook {
         int maxCost = cfg.costOfMaxEnchant;
         int fullProt = Math.max(1, cfg.lapisForFullProtection);
         int eatPct = (int) Math.round(Math.max(0.0, Math.min(1.0, cfg.bookConsumeChance)) * 100);
+        String xpWhere = cfg.xpFromFirstLevels ? "from your first levels" : "off the top of your levels";
 
         List<Filterable<Component>> pages = List.of(
                 page("chiseledEnchants",
@@ -61,7 +62,7 @@ public final class GuideBook {
                         "Top option = highest levels.\n\nMiddle / bottom = reduced levels, cheaper.\n\nEvery "
                         + "stocked, compatible enchant applies together on the item you insert."),
                 page("Cost",
-                        "XP: about " + maxCost + " levels per maxed enchant, charged from your first levels.\n\n"
+                        "XP: about " + maxCost + " levels per maxed enchant, charged " + xpWhere + ".\n\n"
                         + "Lapis: 1 per enchant, minimum."),
                 page("Protecting books",
                         "Without lapis, each applied enchant has a " + eatPct + "% chance to eat its book.\n\n"

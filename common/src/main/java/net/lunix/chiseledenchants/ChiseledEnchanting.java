@@ -90,7 +90,10 @@ public final class ChiseledEnchanting {
 
             // XP is charged only in survival — creative keeps free levels (vanilla-consistent), and this also
             // means the affordability gate above never locks a 0-XP creative player out of the table.
-            if (!creative) player.giveExperiencePoints(-totalXpForLevel(xpLevels));       // "first levels" flat XP
+            if (!creative) {
+                if (cfg.xpFromFirstLevels) player.giveExperiencePoints(-totalXpForLevel(xpLevels)); // flat "first levels"
+                else player.giveExperienceLevels(-xpLevels);                                        // regular, off the top
+            }
 
             // Lapis (and books) are consumed in BOTH game modes so the table's real cost shows even in creative.
             // The table EATS lapis to BUY book protection (§7): a full stack (lapisForFullProtection, which

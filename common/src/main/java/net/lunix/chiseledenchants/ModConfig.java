@@ -70,6 +70,13 @@ public class ModConfig {
     /** XP levels a MAXED enchant costs (any type). Per enchant: ceil(this × level / maxLevel). No cap. Default 10. */
     public int costOfMaxEnchant = 10;
     /**
+     * How the XP cost is taken. true = "front end": a flat points cost from the BOTTOM of the curve
+     * (charges the first-N-levels worth of points, so deep-XP players aren't gouged — cheap). false =
+     * "back end", the regular way: remove that many LEVELS off the top (vanilla-style, costs more the
+     * higher your level). Default true.
+     */
+    public boolean xpFromFirstLevels = true;
+    /**
      * Total lapis the table CONSUMES for 100% book protection — a full stack by default. The per-enchant cost
      * counts toward this; every lapis beyond the enchant cost (up to this) buys protection and is eaten too, so
      * full protection actually costs a stack of lapis (a real end-game sink). Excess past this is left behind.
