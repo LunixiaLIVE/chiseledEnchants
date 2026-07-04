@@ -48,6 +48,14 @@ public class ModConfig {
      * (anvil-rename allowed). Default true.
      */
     public boolean craftOnlyTable = true;
+    /**
+     * Recipe ingredients. The recipe is the vanilla enchanting-table shape ( _B_ / DoD / ooo ) with each
+     * vanilla ingredient swapped for the item below — so it reads as "what replaces what". Use item ids;
+     * an unknown id falls back to the default. (Bundled datapack recipe is the fallback if injection fails.)
+     */
+    public String recipeReplacesBook = "minecraft:nether_star";        // the BOOK slot (top center, x1)
+    public String recipeReplacesDiamond = "minecraft:netherite_ingot"; // the 2 DIAMOND slots (x2)
+    public String recipeReplacesObsidian = "minecraft:obsidian";       // the 4 OBSIDIAN slots (x4)
 
     // ── Scan geometry (§2) — how much of the surrounding shelves the mod reads for targeting.
     //    Vanilla POWER is untouched (its own fixed ring, capped at 15); this only widens book capacity. ──

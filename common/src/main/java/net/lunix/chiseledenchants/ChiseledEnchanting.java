@@ -82,7 +82,14 @@ public final class ChiseledEnchanting {
             ItemStack lapis = enchantSlots.getItem(1);
             int lapisAvail = lapis.is(Items.LAPIS_BLOCK) ? lapis.getCount() : 0;   // the table requires lapis BLOCKS (gems don't count)
             boolean creative = player.hasInfiniteMaterials();
-            if (!creative && (lapisAvail < lapisCost || player.experienceLevel < xpLevels)) return;
+            if (!creative && lapisAvail < lapisCost) {
+                if (lapis.is(Items.LAPIS_LAZULI)) {   // used gems — nudge toward blocks (we can't repaint the slot icon)
+                    player.sendOverlayMessage(Component.literal("The " + cfg.specialTableName
+                            + " needs lapis BLOCKS, not gems.").withStyle(ChatFormatting.RED));
+                }
+                return;
+            }
+            if (!creative && player.experienceLevel < xpLevels) return;
 
             // apply
             for (Landed l : landed) {

@@ -6,7 +6,8 @@
   "mixins": [
     "AnvilMenuMixin",
     "EnchantLapisSlotMixin",
-    "EnchantmentMenuMixin"
+    "EnchantmentMenuMixin",
+    "RecipeManagerMixin"
   ],
   "injectors": {
     "defaultRequire": 1
