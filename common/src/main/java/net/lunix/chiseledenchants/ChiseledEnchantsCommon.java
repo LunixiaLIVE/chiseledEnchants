@@ -8,6 +8,8 @@ import java.nio.file.Path;
 public class ChiseledEnchantsCommon {
 
     public static final String MOD_ID = "chiseledenchants";
+    /** Display version for /cench about — keep in sync with gradle.properties mod_version. */
+    public static final String VERSION = "1.0.0";
     public static final Logger LOGGER = LoggerFactory.getLogger("chiseledEnchants");
 
     /** Loader config directory, supplied by the platform entrypoint at mod construction. */

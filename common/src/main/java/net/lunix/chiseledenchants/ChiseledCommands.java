@@ -10,7 +10,9 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
+import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
+import net.minecraft.network.chat.HoverEvent;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
@@ -24,6 +26,7 @@ import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -34,6 +37,7 @@ import java.util.Set;
 
 /**
  * {@code /chiseledenchants} (alias {@code /cench}):
+ *   • about              — mod info: version, how to get the guide book, and clickable links
  *   • (no args)          — summarize the chiseled setup of the enchanting table you're looking at
  *   • preview            — what the table will apply to the item in your MAIN HAND, with cost (chat readout
  *                          in place of the one-enchant-per-slot vanilla tooltip)
@@ -49,6 +53,8 @@ public final class ChiseledCommands {
         LiteralCommandNode<CommandSourceStack> root = dispatcher.register(
                 Commands.literal("chiseledenchants")
                         .executes(ChiseledCommands::summary)
+                        .then(Commands.literal("about")
+                                .executes(ChiseledCommands::about))
                         .then(Commands.literal("preview")
                                 .executes(ChiseledCommands::preview))
                         .then(Commands.literal("table")
@@ -60,6 +66,47 @@ public final class ChiseledCommands {
                                 .requires(src -> src.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER))
                                 .executes(ChiseledCommands::reload)));
         dispatcher.register(Commands.literal("cench").redirect(root));
+    }
+
+    /** Mod info: version, how to obtain the guide book, and clickable community/repo links (all config-driven). */
+    private static int about(CommandContext<CommandSourceStack> ctx) {
+        CommandSourceStack src = ctx.getSource();
+        ModConfig cfg = ModConfig.get();
+        src.sendSuccess(() -> Component.literal("── chiseledEnchants v" + ChiseledEnchantsCommon.VERSION + " ──")
+                .withStyle(ChatFormatting.GOLD), false);
+        src.sendSuccess(() -> Component.literal("Targeted enchanting via chiseled bookshelves.")
+                .withStyle(ChatFormatting.GRAY), false);
+        if (cfg.guideEnabled && cfg.guideKeyword != null && !cfg.guideKeyword.isBlank()) {
+            src.sendSuccess(() -> Component.literal("Guide book: rename a book & quill to \"")
+                    .withStyle(ChatFormatting.WHITE)
+                    .append(Component.literal(cfg.guideKeyword.trim()).withStyle(ChatFormatting.AQUA))
+                    .append(Component.literal("\" in an anvil.").withStyle(ChatFormatting.WHITE)), false);
+        }
+        src.sendSuccess(() -> Component.literal("Links:").withStyle(ChatFormatting.GRAY), false);
+        src.sendSuccess(() -> linkLine("GitHub", cfg.linkGithub), false);
+        src.sendSuccess(() -> linkLine("Modrinth", cfg.linkModrinth), false);
+        src.sendSuccess(() -> linkLine("CurseForge", cfg.linkCurseforge), false);
+        src.sendSuccess(() -> linkLine("Discord", cfg.linkDiscord), false);
+        return 1;
+    }
+
+    /** One "Name: url" line — url is a clickable OPEN_URL link, or a gray "coming soon" when blank/invalid. */
+    private static Component linkLine(String name, String url) {
+        MutableComponent line = Component.literal("  " + name + ": ").withStyle(ChatFormatting.GRAY);
+        if (url == null || url.isBlank()) {
+            return line.append(Component.literal("coming soon").withStyle(ChatFormatting.DARK_GRAY));
+        }
+        String u = url.trim();
+        try {
+            URI uri = URI.create(u);
+            return line.append(Component.literal(u).withStyle(s -> s
+                    .withColor(ChatFormatting.AQUA)
+                    .withUnderlined(true)
+                    .withClickEvent(new ClickEvent.OpenUrl(uri))
+                    .withHoverEvent(new HoverEvent.ShowText(Component.literal("Open " + u)))));
+        } catch (IllegalArgumentException e) {
+            return line.append(Component.literal(u).withStyle(ChatFormatting.DARK_GRAY));
+        }
     }
 
     /** Raycast the enchanting table the player is looking at (6-block reach), or null. */

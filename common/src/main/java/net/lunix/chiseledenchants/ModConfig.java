@@ -60,6 +60,12 @@ public class ModConfig {
     /** Anvil XP-level cost to produce the guide. Default 1. */
     public int guideAnvilCost = 1;
 
+    // ── /cench about links — fill in and /cench reload; blank = shown as "coming soon" ──
+    public String linkGithub = "https://github.com/LunixiaLIVE/chiseledEnchants";
+    public String linkModrinth = "";
+    public String linkCurseforge = "";
+    public String linkDiscord = "";
+
     // ── Modded-table economy (§5/§6) ──
     /** XP levels a MAXED enchant costs (any type). Per enchant: ceil(this × level / maxLevel). No cap. Default 10. */
     public int costOfMaxEnchant = 10;
