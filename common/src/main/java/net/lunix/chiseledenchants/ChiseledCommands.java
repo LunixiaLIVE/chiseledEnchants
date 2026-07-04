@@ -232,10 +232,11 @@ public final class ChiseledCommands {
                     }, false);
                 }
                 src.sendSuccess(() -> Component.literal("Top-slot cost: " + p.xpLevels() + " XP level"
-                        + (p.xpLevels() == 1 ? "" : "s") + " + " + p.lapisCost() + " lapis")
+                        + (p.xpLevels() == 1 ? "" : "s") + " + " + p.lapisCost() + " lapis block"
+                        + (p.lapisCost() == 1 ? "" : "s"))
                         .withStyle(ChatFormatting.GOLD), false);
                 src.sendSuccess(() -> Component.literal(
-                        "The two cheaper slots apply reduced levels; a full stack of lapis protects your books.")
+                        "The two cheaper slots apply reduced levels; a full stack of lapis blocks protects your books.")
                         .withStyle(ChatFormatting.DARK_GRAY), false);
             }
         }

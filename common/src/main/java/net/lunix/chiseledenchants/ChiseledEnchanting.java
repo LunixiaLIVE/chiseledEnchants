@@ -78,8 +78,9 @@ public final class ChiseledEnchanting {
             int xpLevels = xpCost(landed, cfg);                         // §5/§6 — 1 lapis block per enchant below
             int lapisCost = landed.size();
             ItemStack lapis = enchantSlots.getItem(1);
+            int lapisAvail = lapis.is(Items.LAPIS_BLOCK) ? lapis.getCount() : 0;   // the table requires lapis BLOCKS (gems don't count)
             boolean creative = player.hasInfiniteMaterials();
-            if (!creative && (lapis.getCount() < lapisCost || player.experienceLevel < xpLevels)) return;
+            if (!creative && (lapisAvail < lapisCost || player.experienceLevel < xpLevels)) return;
 
             // apply
             for (Landed l : landed) {
@@ -97,12 +98,13 @@ public final class ChiseledEnchanting {
                 else player.giveExperienceLevels(-xpLevels);                                        // regular, off the top
             }
 
-            // Lapis (and books) are consumed in BOTH game modes so the table's real cost shows even in creative.
-            // The table EATS lapis to BUY book protection (§7): a full stack (lapisForFullProtection, which
-            // includes the per-enchant cost) = 100% protection and is fully consumed; every lapis beyond the
-            // enchant cost reduces book loss and is eaten too; anything past a full stack is left in the slot.
+            // Lapis BLOCKS (and books) are consumed in BOTH game modes so the table's real cost shows even in
+            // creative. The table EATS lapis blocks to BUY book protection (§7): a full stack of blocks
+            // (lapisForFullProtection, which includes the per-enchant cost) = 100% protection and is fully
+            // consumed; every block beyond the enchant cost reduces book loss and is eaten too; anything past a
+            // full stack is left in the slot.
             int fullProt = Math.max(lapisCost, cfg.lapisForFullProtection);
-            int lapisSpent = Math.min(lapis.getCount(), fullProt);                        // eat up to a full stack
+            int lapisSpent = Math.min(lapisAvail, fullProt);                              // eat up to a full stack (blocks)
             double protection = Math.max(0.0, Math.min(1.0,
                     (double) (lapisSpent - lapisCost) / Math.max(1, fullProt - lapisCost)));
             lapis.shrink(lapisSpent);

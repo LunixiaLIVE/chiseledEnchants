@@ -41,7 +41,7 @@ public class ModConfig {
      * Custom name that marks the special table (matches the crafted item's name; case-insensitive, style-agnostic).
      * Obtain the table via the recipe, or by anvil-renaming any enchanting table to this exact text.
      */
-    public String specialTableName = "Arcane Enchanter";
+    public String specialTableName = "Chiseled Enchanter";
 
     // ── Scan geometry (§2) — how much of the surrounding shelves the mod reads for targeting.
     //    Vanilla POWER is untouched (its own fixed ring, capped at 15); this only widens book capacity. ──
@@ -90,9 +90,9 @@ public class ModConfig {
      */
     public boolean xpFromFirstLevels = true;
     /**
-     * Total lapis the table CONSUMES for 100% book protection — a full stack by default. The per-enchant cost
-     * counts toward this; every lapis beyond the enchant cost (up to this) buys protection and is eaten too, so
-     * full protection actually costs a stack of lapis (a real end-game sink). Excess past this is left behind.
+     * Total lapis BLOCKS the table CONSUMES for 100% book protection — a full stack by default. The per-enchant
+     * cost counts toward this; every block beyond the enchant cost (up to this) buys protection and is eaten too,
+     * so full protection costs a stack of lapis blocks (a real end-game sink). Excess past this is left behind.
      */
     public int lapisForFullProtection = 64;
 

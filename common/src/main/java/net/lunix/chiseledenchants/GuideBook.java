@@ -69,11 +69,11 @@ public final class GuideBook {
                         + "stocked, compatible enchant applies together on the item you insert."),
                 page("Cost",
                         "XP: about " + maxCost + " levels per maxed enchant, charged " + xpWhere + ".\n\n"
-                        + "Lapis: 1 per enchant, minimum."),
+                        + "Lapis blocks: 1 per enchant, minimum."),
                 page("Protecting books",
-                        "Without lapis, each applied enchant has a " + eatPct + "% chance to eat its book.\n\n"
-                        + "Add extra lapis to reduce that — " + fullProt + " lapis (a full stack) = 100% "
-                        + "protection, and all of it is consumed. Lapis matters!"),
+                        "Without lapis blocks, each applied enchant has a " + eatPct + "% chance to eat its book.\n\n"
+                        + "Add extra lapis blocks — " + fullProt + " blocks (a full stack) = 100% protection, and "
+                        + "all are consumed. Lapis blocks matter!"),
                 page("Commands",
                         "/cench — shelf summary\n\n/cench preview — what applies to your held item\n\n"
                         + "/cench table — what the shelves apply\n\n/cench find <enchant> — trace it"),
