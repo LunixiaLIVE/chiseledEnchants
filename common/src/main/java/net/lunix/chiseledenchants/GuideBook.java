@@ -45,15 +45,21 @@ public final class GuideBook {
         int fullProt = Math.max(1, cfg.lapisForFullProtection);
         int eatPct = (int) Math.round(Math.max(0.0, Math.min(1.0, cfg.bookConsumeChance)) * 100);
         String xpWhere = cfg.xpFromFirstLevels ? "from your first levels" : "off the top of your levels";
+        boolean requireTable = cfg.requireSpecialTable;
+        String tableName = (cfg.specialTableName == null || cfg.specialTableName.isBlank())
+                ? "Arcane Enchanter" : cfg.specialTableName.trim();
+        String setup = requireTable
+                ? "Craft the \"" + tableName + "\" (or anvil-rename an enchanting table to \"" + tableName
+                  + "\"), then place chiseled bookshelves around it (usual enchanting spots, 1-block air gap) "
+                  + "and fill them with single-enchant books.\n\nMixing in regular shelves blanks the options."
+                : "Place chiseled bookshelves around an enchanting table (usual spots, 1-block air gap) and fill "
+                  + "them with single-enchant books.\n\nMixing in regular shelves blanks the options.";
 
         List<Filterable<Component>> pages = List.of(
                 page("chiseledEnchants",
                         "Targeted enchanting.\n\nStock chiseled bookshelves around an enchanting table with "
                         + "single-enchant books to guarantee exactly the enchants you want."),
-                page("Setup",
-                        "Place chiseled bookshelves in the usual enchanting spots (with the 1-block air gap), "
-                        + "then fill them with single-enchant books.\n\nAll chiseled = our system. Mixed with "
-                        + "regular shelves = blanked."),
+                page("Setup", setup),
                 page("Guarantees",
                         "Per enchant:\n\n• Chance to land = books ÷ " + chanceDenom + "\n\n• Level = the books "
                         + "averaged over " + levelDenom + " slots (empty slots count as 0)\n\n" + guarantee

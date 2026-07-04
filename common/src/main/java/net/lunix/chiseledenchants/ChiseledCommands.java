@@ -76,6 +76,13 @@ public final class ChiseledCommands {
                 .withStyle(ChatFormatting.GOLD), false);
         src.sendSuccess(() -> Component.literal("Targeted enchanting via chiseled bookshelves.")
                 .withStyle(ChatFormatting.GRAY), false);
+        if (cfg.requireSpecialTable && cfg.specialTableName != null && !cfg.specialTableName.isBlank()) {
+            src.sendSuccess(() -> Component.literal("Enchant at the \"")
+                    .withStyle(ChatFormatting.WHITE)
+                    .append(Component.literal(cfg.specialTableName.trim()).withStyle(ChatFormatting.AQUA))
+                    .append(Component.literal("\" table (crafted or anvil-renamed) with chiseled shelves.")
+                            .withStyle(ChatFormatting.WHITE)), false);
+        }
         if (cfg.guideEnabled && cfg.guideKeyword != null && !cfg.guideKeyword.isBlank()) {
             src.sendSuccess(() -> Component.literal("Guide book: rename a book & quill to \"")
                     .withStyle(ChatFormatting.WHITE)
@@ -188,8 +195,14 @@ public final class ChiseledCommands {
                                       ChiseledEnchanting.TablePreview p) {
         src.sendSuccess(() -> Component.literal("── Table Preview ──").withStyle(ChatFormatting.GOLD), false);
         switch (p.kind()) {
-            case VANILLA -> src.sendSuccess(() -> Component.literal(
-                    "Vanilla table (no chiseled shelves) — enchants roll the normal way.").withStyle(ChatFormatting.GRAY), false);
+            case VANILLA -> {
+                ModConfig vcfg = ModConfig.get();
+                String hint = vcfg.requireSpecialTable
+                        ? "Normal enchanting here. Targeted enchanting needs the \"" + vcfg.specialTableName
+                          + "\" table with chiseled shelves."
+                        : "Normal enchanting here. Add chiseled shelves for targeted enchanting.";
+                src.sendSuccess(() -> Component.literal(hint).withStyle(ChatFormatting.GRAY), false);
+            }
             case MIXED -> src.sendSuccess(() -> Component.literal(
                     "⚠ Mixed shelves (chiseled + regular). The table is blanked — remove the regular bookshelves.")
                     .withStyle(ChatFormatting.RED), false);

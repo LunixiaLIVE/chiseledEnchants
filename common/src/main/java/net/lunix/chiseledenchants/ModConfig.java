@@ -30,6 +30,19 @@ public class ModConfig {
      */
     public int slotsForLevelAverage = 6;
 
+    // ── Special enchanting table (the crafted gate) ──
+    /**
+     * Require the modded system to run on a specially-named enchanting table (the crafted gate). When true,
+     * a normal enchanting table is pure vanilla even with chiseled shelves; only the named table + chiseled
+     * shelves does targeted enchanting. false = any enchanting table with chiseled shelves works. Default true.
+     */
+    public boolean requireSpecialTable = true;
+    /**
+     * Custom name that marks the special table (matches the crafted item's name; case-insensitive, style-agnostic).
+     * Obtain the table via the recipe, or by anvil-renaming any enchanting table to this exact text.
+     */
+    public String specialTableName = "Arcane Enchanter";
+
     // ── Scan geometry (§2) — how much of the surrounding shelves the mod reads for targeting.
     //    Vanilla POWER is untouched (its own fixed ring, capped at 15); this only widens book capacity. ──
     /** Vertical layers scanned, from table level up. 2 = vanilla; 3 lets players stack shelves 3 high. */

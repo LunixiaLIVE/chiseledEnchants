@@ -2,6 +2,7 @@ package net.lunix.chiseledenchants;
 
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
+import net.minecraft.network.chat.Component;
 import net.minecraft.core.NonNullList;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.Registries;
@@ -19,6 +20,7 @@ import net.minecraft.world.level.Level;
 import net.minecraft.tags.BlockTags;
 import net.minecraft.world.level.block.ChiseledBookShelfBlock;
 import net.minecraft.world.level.block.entity.ChiseledBookShelfBlockEntity;
+import net.minecraft.world.level.block.entity.EnchantingTableBlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 
 import java.util.ArrayList;
@@ -388,9 +390,23 @@ public final class ChiseledEnchanting {
         return new int[]{chiseled, regular};
     }
 
-    /** A modded table = any chiseled shelf in range (even empty). */
+    /**
+     * A modded table = the special-named enchanting table (the crafted gate, when enabled) that also has at
+     * least one chiseled shelf in range. With the gate off, any table with a chiseled shelf qualifies.
+     */
     public static boolean isModdedTable(Level level, BlockPos tablePos) {
+        ModConfig cfg = ModConfig.get();
+        if (cfg.requireSpecialTable && !isSpecialTable(level, tablePos, cfg)) return false;
         return shelfCensus(level, tablePos)[0] > 0;
+    }
+
+    /** The crafted gate: an enchanting table whose custom name matches {@code specialTableName} (case-insensitive). */
+    private static boolean isSpecialTable(Level level, BlockPos tablePos, ModConfig cfg) {
+        if (!(level.getBlockEntity(tablePos) instanceof EnchantingTableBlockEntity be)) return false;
+        Component name = be.getCustomName();
+        if (name == null) return false;
+        String want = cfg.specialTableName == null ? "" : cfg.specialTableName.trim();
+        return !want.isEmpty() && name.getString().trim().equalsIgnoreCase(want);
     }
 
     /** Mixed = chiseled AND regular shelves both present → error (blank the table). */
