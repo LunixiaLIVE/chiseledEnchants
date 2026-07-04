@@ -35,6 +35,16 @@ public final class GuideBook {
 
     /** Build the guide as a signed written book (page content is server-authoritative → vanilla-client safe). */
     public static ItemStack create() {
+        // Pull the live figures from the in-memory config so the book reflects THIS server's settings
+        // (an admin edits the config, runs /cench reload, and the next book made reads the new numbers).
+        ModConfig cfg = ModConfig.get();
+        int chanceDenom = ChiseledEnchanting.chanceDenom(cfg);
+        int levelDenom = ChiseledEnchanting.levelDenom(cfg);
+        int guarantee = Math.max(chanceDenom, levelDenom);
+        int maxCost = cfg.costOfMaxEnchant;
+        int fullProt = Math.max(1, cfg.lapisForFullProtection);
+        int eatPct = (int) Math.round(Math.max(0.0, Math.min(1.0, cfg.bookConsumeChance)) * 100);
+
         List<Filterable<Component>> pages = List.of(
                 page("chiseledEnchants",
                         "Targeted enchanting.\n\nStock chiseled bookshelves around an enchanting table with "
@@ -44,18 +54,19 @@ public final class GuideBook {
                         + "then fill them with single-enchant books.\n\nAll chiseled = our system. Mixed with "
                         + "regular shelves = blanked."),
                 page("Guarantees",
-                        "Per enchant:\n\n• Chance to land = books ÷ 6\n\n• Level = the books averaged over "
-                        + "6 slots (empty slots count as 0)\n\nA full shelf of 6 max-level books = that enchant "
-                        + "at max, every time."),
+                        "Per enchant:\n\n• Chance to land = books ÷ " + chanceDenom + "\n\n• Level = the books "
+                        + "averaged over " + levelDenom + " slots (empty slots count as 0)\n\n" + guarantee
+                        + " max-level books of one enchant = that enchant at max, every time."),
                 page("The 3 options",
                         "Top option = highest levels.\n\nMiddle / bottom = reduced levels, cheaper.\n\nEvery "
                         + "stocked, compatible enchant applies together on the item you insert."),
                 page("Cost",
-                        "XP: about 10 levels per maxed enchant, charged from your first levels.\n\nLapis: 1 per "
-                        + "enchant, minimum."),
+                        "XP: about " + maxCost + " levels per maxed enchant, charged from your first levels.\n\n"
+                        + "Lapis: 1 per enchant, minimum."),
                 page("Protecting books",
-                        "The table eats one book per enchant it applies.\n\nAdd extra lapis to reduce that — "
-                        + "a full stack = 100% protection, and all of it is consumed. Lapis matters!"),
+                        "Without lapis, each applied enchant has a " + eatPct + "% chance to eat its book.\n\n"
+                        + "Add extra lapis to reduce that — " + fullProt + " lapis (a full stack) = 100% "
+                        + "protection, and all of it is consumed. Lapis matters!"),
                 page("Commands",
                         "/cench — shelf summary\n\n/cench preview — what applies to your held item\n\n"
                         + "/cench table — what the shelves apply\n\n/cench find <enchant> — trace it"),
