@@ -36,8 +36,23 @@ public class ModConfig {
     public int scanLayers = 2;
     /** Horizontal reach of the shelf scan (clamped to a minimum of 2 — the air gap owns distance 1). */
     public int scanRadius = 2;
-    /** Single 0-or-1 roll per landed enchant; lowest-level book eaten first (§7). */
-    public double bookConsumeChance = 0.5;
+    /**
+     * Base chance per landed enchant that its lowest-level source book is eaten (§7). Default 1.0 =
+     * a book is ALWAYS consumed unless lapis protection reduces it: effective = this × (1 − protection),
+     * where protection scales to 1.0 at a full stack ({@link #lapisForFullProtection}). So "100% unless
+     * you feed a stack of lapis." Lowest-level book of the enchant is eaten first.
+     */
+    public double bookConsumeChance = 1.0;
+
+    // ── Modded-table economy (§5/§6) ──
+    /** XP levels a MAXED enchant costs (any type). Per enchant: ceil(this × level / maxLevel). No cap. Default 10. */
+    public int costOfMaxEnchant = 10;
+    /**
+     * Total lapis the table CONSUMES for 100% book protection — a full stack by default. The per-enchant cost
+     * counts toward this; every lapis beyond the enchant cost (up to this) buys protection and is eaten too, so
+     * full protection actually costs a stack of lapis (a real end-game sink). Excess past this is left behind.
+     */
+    public int lapisForFullProtection = 64;
 
     // ── Treasure enchants (§5) — guarantee-only; never in the vanilla random roll ──
     /** Master switch: treasure enchants may be guaranteed. Set false for fully-vanilla treasure (off). */
@@ -51,6 +66,12 @@ public class ModConfig {
 
     // ── Curses (§5) ──
     public boolean allowCurses = false;
+
+    // ── Books (§8) ──
+    /** Whether the modded table may enchant a BOOK item (off by default — the table is for gear). */
+    public boolean allowBookEnchanting = false;
+    /** When book-enchanting is on, allow mutually-conflicting enchants on a single book (books can hold them). */
+    public boolean allowConflictingOnBook = false;
 
     // ── Cheaper enchant-table slots — the guaranteed LEVEL is capped per slot (top = the enchant's max).
     //    Keyed by the enchant's MAX level. mid/low = [min, max] rolled random-inclusive each use; 0 = none.

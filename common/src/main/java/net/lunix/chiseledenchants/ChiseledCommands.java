@@ -17,6 +17,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.permissions.Permissions;
 import net.minecraft.util.Mth;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.level.ClipContext;
 import net.minecraft.world.level.block.Blocks;
@@ -35,6 +36,9 @@ import java.util.Set;
 /**
  * {@code /chiseledenchants} (alias {@code /cench}):
  *   • (no args)          — summarize the chiseled setup of the enchanting table you're looking at
+ *   • preview            — what the table will apply to the item in your MAIN HAND, with cost (chat readout
+ *                          in place of the one-enchant-per-slot vanilla tooltip)
+ *   • table              — what the SHELVES are configured to apply (item-agnostic), with cost
  *   • find &lt;enchant&gt;  — trace colored particle threads from the table to each shelf holding it
  *   • reload             — reload the config from disk (op / gamemaster permission)
  */
@@ -46,6 +50,10 @@ public final class ChiseledCommands {
         LiteralCommandNode<CommandSourceStack> root = dispatcher.register(
                 Commands.literal("chiseledenchants")
                         .executes(ChiseledCommands::summary)
+                        .then(Commands.literal("preview")
+                                .executes(ChiseledCommands::preview))
+                        .then(Commands.literal("table")
+                                .executes(ChiseledCommands::previewTable))
                         .then(Commands.literal("find")
                                 .then(Commands.argument("enchant", StringArgumentType.greedyString())
                                         .executes(ctx -> find(ctx, StringArgumentType.getString(ctx, "enchant")))))
@@ -100,6 +108,80 @@ public final class ChiseledCommands {
         return 1;
     }
 
+    /** Chat readout of what the table will apply to the item in the player's MAIN HAND, with cost. */
+    private static int preview(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+        CommandSourceStack src = ctx.getSource();
+        ServerPlayer player = src.getPlayerOrException();
+        BlockPos tablePos = lookedAtTable(player);
+        if (tablePos == null) {
+            src.sendFailure(Component.literal("Look directly at an enchanting table to preview it."));
+            return 0;
+        }
+        ItemStack held = player.getMainHandItem();
+        ChiseledEnchanting.TablePreview p = ChiseledEnchanting.preview(player.level(), tablePos, held);
+        renderPreview(src, held.getHoverName().getString(), "None of the stocked enchants apply to that item.", p);
+        return 1;
+    }
+
+    /** Chat readout of what the SHELVES are configured to apply (item-agnostic), with cost. */
+    private static int previewTable(CommandContext<CommandSourceStack> ctx) throws CommandSyntaxException {
+        CommandSourceStack src = ctx.getSource();
+        ServerPlayer player = src.getPlayerOrException();
+        BlockPos tablePos = lookedAtTable(player);
+        if (tablePos == null) {
+            src.sendFailure(Component.literal("Look directly at an enchanting table to inspect its shelves."));
+            return 0;
+        }
+        ChiseledEnchanting.TablePreview p = ChiseledEnchanting.previewShelves(player.level(), tablePos);
+        renderPreview(src, "These shelves", "No eligible enchants are stocked in the shelves.", p);
+        return 1;
+    }
+
+    /** Shared formatter for both preview commands. {@code subject} heads the OK list; {@code noneMsg} covers NONE. */
+    private static void renderPreview(CommandSourceStack src, String subject, String noneMsg,
+                                      ChiseledEnchanting.TablePreview p) {
+        src.sendSuccess(() -> Component.literal("── Table Preview ──").withStyle(ChatFormatting.GOLD), false);
+        switch (p.kind()) {
+            case VANILLA -> src.sendSuccess(() -> Component.literal(
+                    "Vanilla table (no chiseled shelves) — enchants roll the normal way.").withStyle(ChatFormatting.GRAY), false);
+            case MIXED -> src.sendSuccess(() -> Component.literal(
+                    "⚠ Mixed shelves (chiseled + regular). The table is blanked — remove the regular bookshelves.")
+                    .withStyle(ChatFormatting.RED), false);
+            case CONFLICT -> src.sendSuccess(() -> Component.literal(
+                    "⚠ Conflicting enchants stocked (e.g. Sharpness + Smite). The table is blanked — remove the conflicts.")
+                    .withStyle(ChatFormatting.RED), false);
+            case BOOK_DISABLED -> src.sendSuccess(() -> Component.literal(
+                    "You're holding a book, but book enchanting is disabled (allowBookEnchanting).")
+                    .withStyle(ChatFormatting.YELLOW), false);
+            case EMPTY -> src.sendSuccess(() -> Component.literal(
+                    "Hold the item you want to enchant in your main hand, then run this again.")
+                    .withStyle(ChatFormatting.YELLOW), false);
+            case NOT_ENCHANTABLE -> src.sendSuccess(() -> Component.literal(
+                    "That item can't be enchanted.").withStyle(ChatFormatting.YELLOW), false);
+            case NONE_APPLICABLE -> src.sendSuccess(() -> Component.literal(noneMsg).withStyle(ChatFormatting.GRAY), false);
+            case OK -> {
+                src.sendSuccess(() -> Component.literal(subject + " — the top slot applies:")
+                        .withStyle(ChatFormatting.GRAY), false);
+                for (ChiseledEnchanting.PreviewEnchant pe : p.enchants()) {
+                    src.sendSuccess(() -> {
+                        int pct = (int) Math.round(pe.landChance() * 100);
+                        return Component.literal("  • ")
+                                .append(pe.enchant().value().description().copy().withStyle(ChatFormatting.WHITE))
+                                .append(Component.literal(" " + roman(pe.level())).withStyle(ChatFormatting.WHITE))
+                                .append(Component.literal("  — " + pct + "% land")
+                                        .withStyle(pct >= 100 ? ChatFormatting.GREEN : ChatFormatting.AQUA));
+                    }, false);
+                }
+                src.sendSuccess(() -> Component.literal("Top-slot cost: " + p.xpLevels() + " XP level"
+                        + (p.xpLevels() == 1 ? "" : "s") + " + " + p.lapisCost() + " lapis")
+                        .withStyle(ChatFormatting.GOLD), false);
+                src.sendSuccess(() -> Component.literal(
+                        "The two cheaper slots apply reduced levels; a full stack of lapis protects your books.")
+                        .withStyle(ChatFormatting.DARK_GRAY), false);
+            }
+        }
+    }
+
     /** Trace colored TRAIL particle threads from the table to each shelf holding a matching enchant. */
     private static int find(CommandContext<CommandSourceStack> ctx, String query) throws CommandSyntaxException {
         CommandSourceStack src = ctx.getSource();
@@ -127,8 +209,11 @@ public final class ChiseledCommands {
             for (ChiseledEnchanting.Book b : e.getValue()) shelves.add(b.pos());
             for (BlockPos shelf : shelves) {
                 Vec3 from = Vec3.atCenterOf(shelf);
-                level.sendParticles(new TrailParticleOption(target, color, 30),
-                        from.x, from.y, from.z, 14, 0.16, 0.2, 0.16, 0.0);
+                // TRAIL travels shelf→table over its lifetime, so lifetime sets the speed: 0.25 blocks/sec
+                // ⇒ ticks = distance / 0.25 × 20 = distance × 80 (≈10s at a normal ~2.5-block shelf gap).
+                int duration = Mth.clamp((int) Math.round(from.distanceTo(target) * 80.0), 60, 300);
+                level.sendParticles(new TrailParticleOption(target, color, duration),
+                        from.x, from.y, from.z, 40, 0.16, 0.2, 0.16, 0.0);
                 shelvesLit++;
             }
         }
