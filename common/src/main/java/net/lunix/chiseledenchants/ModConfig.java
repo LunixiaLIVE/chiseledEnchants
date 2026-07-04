@@ -44,6 +44,22 @@ public class ModConfig {
      */
     public double bookConsumeChance = 1.0;
 
+    // ── /cench find particle trace ──
+    /** How many times the trace pulse repeats. Default 10. */
+    public int particleRepeats = 10;
+    /** Length of each trace pulse in ticks (20 = 1 second). Also sets the travel speed. Default 20. */
+    public int particleDurationTicks = 20;
+    /** Flow direction: true = pulses go table → shelves, false = shelves → table. Default true. */
+    public boolean particleFromTable = true;
+
+    // ── Guide book (anvil-rename trigger) ──
+    /** Master switch for the anvil-rename guide book. */
+    public boolean guideEnabled = true;
+    /** Rename a book &amp; quill to this (case-insensitive) in an anvil to receive the guide. Default "chiseledEnchants". */
+    public String guideKeyword = "chiseledEnchants";
+    /** Anvil XP-level cost to produce the guide. Default 1. */
+    public int guideAnvilCost = 1;
+
     // ── Modded-table economy (§5/§6) ──
     /** XP levels a MAXED enchant costs (any type). Per enchant: ceil(this × level / maxLevel). No cap. Default 10. */
     public int costOfMaxEnchant = 10;

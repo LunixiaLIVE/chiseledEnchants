@@ -10,7 +10,6 @@ import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
-import net.minecraft.core.particles.TrailParticleOption;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.server.level.ServerLevel;
@@ -194,10 +193,10 @@ public final class ChiseledCommands {
         ServerLevel level = player.level();
         Map<Holder<Enchantment>, List<ChiseledEnchanting.Book>> byEnchant = ChiseledEnchanting.scan(level, tablePos);
         String q = query.trim().toLowerCase(Locale.ROOT);
-        Vec3 target = Vec3.atCenterOf(tablePos);
+        Vec3 origin = Vec3.atCenterOf(tablePos);   // pulses trace FROM the table OUT to each shelf
 
         Set<Holder<Enchantment>> matched = new HashSet<>();
-        int shelvesLit = 0;
+        List<ParticleScheduler.Beam> beams = new ArrayList<>();
         for (Map.Entry<Holder<Enchantment>, List<ChiseledEnchanting.Book>> e : byEnchant.entrySet()) {
             Holder<Enchantment> ench = e.getKey();
             String id = ench.getRegisteredName().toLowerCase(Locale.ROOT);
@@ -207,16 +206,12 @@ public final class ChiseledCommands {
             int color = 0xFF000000 | colorFor(ench);
             Set<BlockPos> shelves = new HashSet<>();
             for (ChiseledEnchanting.Book b : e.getValue()) shelves.add(b.pos());
-            for (BlockPos shelf : shelves) {
-                Vec3 from = Vec3.atCenterOf(shelf);
-                // TRAIL travels shelf→table over its lifetime, so lifetime sets the speed: 0.25 blocks/sec
-                // ⇒ ticks = distance / 0.25 × 20 = distance × 80 (≈10s at a normal ~2.5-block shelf gap).
-                int duration = Mth.clamp((int) Math.round(from.distanceTo(target) * 80.0), 60, 300);
-                level.sendParticles(new TrailParticleOption(target, color, duration),
-                        from.x, from.y, from.z, 40, 0.16, 0.2, 0.16, 0.0);
-                shelvesLit++;
-            }
+            for (BlockPos shelf : shelves) beams.add(new ParticleScheduler.Beam(Vec3.atCenterOf(shelf), color));
         }
+        int shelvesLit = beams.size();
+        ModConfig cfg = ModConfig.get();
+        ParticleScheduler.schedule(level, origin, beams, cfg.particleRepeats, cfg.particleDurationTicks,
+                cfg.particleFromTable);
         if (matched.isEmpty()) {
             src.sendFailure(Component.literal("No shelves here hold an enchant matching \"" + query + "\"."));
             return 0;
