@@ -63,20 +63,23 @@ public final class GuideBook {
 
         List<Filterable<Component>> pages = List.of(
                 page("chiseledEnchants",
-                        "Targeted enchanting.\n\nStock chiseled bookshelves around an enchanting table with "
-                        + "single-enchant books to guarantee exactly the enchants you want."),
+                        "Targeted enchanting — no random rolls.\n\nStock chiseled bookshelves around the table "
+                        + "with single-enchant books to guarantee exactly the enchants you want, paid in XP and "
+                        + "lapis BLOCKS."),
                 page("Setup", setup),
                 page("Guarantees",
                         "Per enchant:\n\n• Chance to land = books ÷ " + chanceDenom + "\n\n• Level = the books "
                         + "averaged over " + levelDenom + " slots (empty slots count as 0)\n\n" + guarantee
                         + " max-level books of one enchant = that enchant at max, every time."),
                 page("The 3 options",
-                        "Top option = highest levels.\n\nMiddle / bottom = reduced levels, cheaper.\n\nEvery "
-                        + "stocked, compatible enchant applies together on the item you insert."),
+                        "Three power tiers. The top applies the highest levels; the two below apply reduced "
+                        + "levels. Each tier has its own lapis cost (" + lapisLow + "–" + lapisHigh + " blocks) "
+                        + "that unlocks it.\n\nAll stocked, compatible enchants apply together — you pay XP per "
+                        + "enchant that lands."),
                 page("Cost",
-                        "XP: about " + maxCost + " levels per maxed enchant, charged " + xpWhere + ".\n\n"
-                        + "Lapis blocks: " + lapisLow + "–" + lapisHigh + " per option (unlocks that level; "
-                        + "see /cench table)."),
+                        "XP: about " + maxCost + " levels per maxed enchant, charged " + xpWhere + " (per enchant "
+                        + "that lands).\n\nLapis BLOCKS, not gems: " + lapisLow + "–" + lapisHigh + " per option. "
+                        + "See /cench table for the exact cost."),
                 page("Protecting books",
                         "Without spare lapis, each applied enchant has a " + eatPct + "% chance to eat its book.\n\n"
                         + "Each lapis block beyond an option's cost adds " + perBlockStr + "% protection, up to 100% "
