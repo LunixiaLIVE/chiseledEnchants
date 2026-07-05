@@ -70,10 +70,17 @@ public abstract class EnchantmentMenuMixin implements ModdedTableHolder {
         openAccess.execute((level, pos) -> {
             if (!level.isClientSide() && ChiseledEnchanting.isModdedTable(level, pos)) {
                 Component text = Component.literal(cfg.tableOpenNotice.trim()).withStyle(ChatFormatting.AQUA);
-                sp.sendSystemMessage(text);          // OPTION 1: chat (bottom-left)
-                TableNotice.showBoss(sp, text, 80);  // OPTION 2: boss bar (top, ~4s) — pick whichever fits
+                TableNotice.showBoss(sp, text, 80);   // boss bar at the top for ~4s (also cleared when the table closes)
             }
         });
+    }
+
+    /** Clear the open-notice boss bar when the player closes the table (in case it's still showing). */
+    @Inject(method = "removed", at = @At("HEAD"))
+    private void chiseledEnchants_closeNotice(Player player, CallbackInfo ci) {
+        if (player instanceof ServerPlayer sp) {
+            TableNotice.removeFor(sp);
+        }
     }
 
     /** Is this menu the modded (Chiseled Enchanter) table? Used by the lapis slot to accept only blocks there. */
