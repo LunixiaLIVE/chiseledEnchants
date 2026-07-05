@@ -423,8 +423,8 @@ public final class ChiseledEnchanting {
         String want = cfg.specialTableName == null ? "" : cfg.specialTableName.trim();
         if (want.isEmpty() || !name.getString().trim().equalsIgnoreCase(want)) return false;
         if (!cfg.craftOnlyTable) return true;                              // any-color name accepted
-        TextColor color = name.getStyle().getColor();                     // recipe stamps rare/aqua; anvil can't
-        return color != null && color.equals(TextColor.fromLegacyFormat(ChatFormatting.AQUA));
+        TextColor color = name.getStyle().getColor();                     // recipe stamps EPIC light-purple; anvil can't color
+        return color != null && color.equals(TextColor.fromLegacyFormat(ChatFormatting.LIGHT_PURPLE));
     }
 
     /** Mixed = chiseled AND regular shelves both present → error (blank the table). */

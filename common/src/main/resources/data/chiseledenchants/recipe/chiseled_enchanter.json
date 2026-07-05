@@ -15,8 +15,8 @@
     "id": "minecraft:enchanting_table",
     "count": 1,
     "components": {
-      "minecraft:custom_name": { "text": "Chiseled Enchanter", "color": "aqua", "italic": false },
-      "minecraft:rarity": "rare"
+      "minecraft:custom_name": { "text": "Chiseled Enchanter", "color": "light_purple", "italic": false },
+      "minecraft:rarity": "epic"
     }
   }
 }
