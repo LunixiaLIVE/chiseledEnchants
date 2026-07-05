@@ -119,6 +119,22 @@ annotated for readability; the real file is plain JSON):
 > — flip any to `false` to bar it. Edit the file and run `/cench reload`; the next guide book made reflects
 > the new numbers automatically.
 
+### 🔓 What counts as a targeting table — `requireSpecialTable` + `craftOnlyTable`
+
+These two options decide which enchanting tables do targeted enchanting, from a strict crafted gate to
+wide open. They're the part admins most often ask about, so here's the whole picture:
+
+| `requireSpecialTable` | `craftOnlyTable` | What works as a targeting table | Good for |
+|:---:|:---:|---|---|
+| `true` | `true` *(default)* | **Only the crafted "Chiseled Enchanter."** The recipe stamps a rarity-colored name a vanilla anvil can't reproduce, so nothing else qualifies. | Keeping targeted enchanting behind a real crafting cost — a deliberate build and a progression goal. |
+| `true` | `false` | Any enchanting table **anvil-renamed** to the special name (`specialTableName`); the color is ignored. | Convenience — let players upgrade tables they already have, no recipe grind. Just an anvil + a level or two. |
+| `false` | *(ignored)* | **Any** enchanting table that has chiseled bookshelves around it. | Fully open — build- or minigame-focused servers where you don't want a gate at all. |
+
+> [!NOTE]
+> `craftOnlyTable` **only matters when `requireSpecialTable` is `true`** — it's the knob for *how you obtain*
+> the special table (craft it vs. rename any table). With `requireSpecialTable: false` there is no special
+> table at all, so `craftOnlyTable` is ignored entirely.
+
 ## 📦 Versions &amp; downloads
 
 > [!NOTE]
