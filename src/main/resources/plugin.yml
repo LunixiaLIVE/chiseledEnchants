@@ -1,0 +1,17 @@
+name: chiseledEnchants
+version: '${version}'
+main: net.lunix.chiseledenchants.paper.ChiseledEnchantsPaper
+# Verified accepted on Paper 26.1.2 (build 72) — loads without a legacy/api-version warning.
+api-version: '1.21'
+description: Targeted enchanting — stock chiseled bookshelves with single-enchant books to guarantee enchantments.
+author: LunixiaLIVE
+website: https://github.com/LunixiaLIVE/chiseledEnchants
+commands:
+  chiseledenchants:
+    description: chiseledEnchants commands
+    aliases: [cench]
+    usage: /cench [about|reload|guide|preview|table|find]
+permissions:
+  chiseledenchants.reload:
+    description: Reload the chiseledEnchants config
+    default: op

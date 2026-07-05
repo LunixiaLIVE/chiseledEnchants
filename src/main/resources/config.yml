@@ -1,0 +1,42 @@
+# chiseledEnchants (Paper) configuration.
+# Mirrors the mod's options. All chance/protection values are 0-1 fractions (0.5 = 50%).
+# Edit and run /cench reload to apply.
+
+# ── Guarantee strength ──
+# Max-level books of an enchant for a 100% chance to land (ONLY max-level books count).
+booksForFullChance: 6
+
+# ── The special "Chiseled Enchanter" table ──
+requireSpecialTable: true
+specialTableName: "Chiseled Enchanter"
+craftOnlyTable: true
+
+# ── Economy ──
+# NOTE: on Paper the enchanting table's lapis slot takes GEMS (no mixin to widen it to blocks),
+# so the block-based cost/protection may be reworked during implementation.
+lapisCost: 14
+costOfMaxEnchant: 10
+bookConsumeChance: 0.5
+bookProtectionEnabled: true
+protectionPerBlock: 0.02
+maxProtection: 1.0
+
+# ── Rules ──
+resolveConflicts: true
+allowCurses: false
+allowTreasureEnchants: true
+allowBookEnchanting: false
+
+# ── Scan geometry ──
+scanRadius: 2
+scanLayers: 2
+
+# ── Guide book (anvil-rename trigger) ──
+guideEnabled: true
+guideKeyword: "chiseledEnchants"
+
+# ── Links (blank = hidden) ──
+linkGithub: "https://github.com/LunixiaLIVE/chiseledEnchants"
+linkModrinth: "https://modrinth.com/project/chiseledenchants"
+linkCurseforge: ""
+linkDiscord: ""
