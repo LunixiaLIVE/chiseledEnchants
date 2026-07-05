@@ -1,8 +1,12 @@
 package net.lunix.chiseledenchants.mixin;
 
 import net.lunix.chiseledenchants.ChiseledEnchanting;
+import net.lunix.chiseledenchants.ModConfig;
 import net.lunix.chiseledenchants.ModdedTableHolder;
+import net.minecraft.ChatFormatting;
+import net.minecraft.network.chat.Component;
 import net.minecraft.world.Container;
+import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.inventory.ContainerLevelAccess;
@@ -52,6 +56,19 @@ public abstract class EnchantmentMenuMixin implements ModdedTableHolder {
         if (container == enchantSlots) {
             ChiseledEnchanting.moddedSlots(enchantSlots, access, getEnchantmentSeed(), costs, enchantClue, levelClue);
         }
+    }
+
+    /** Actionbar notice when a player opens the modded table (server-side 3-arg ctor only). */
+    @Inject(method = "<init>(ILnet/minecraft/world/entity/player/Inventory;Lnet/minecraft/world/inventory/ContainerLevelAccess;)V",
+            at = @At("RETURN"))
+    private void chiseledEnchants_openNotice(int id, Inventory inv, ContainerLevelAccess openAccess, CallbackInfo ci) {
+        ModConfig cfg = ModConfig.get();
+        if (cfg.tableOpenNotice == null || cfg.tableOpenNotice.isBlank()) return;
+        openAccess.execute((level, pos) -> {
+            if (!level.isClientSide() && ChiseledEnchanting.isModdedTable(level, pos)) {
+                inv.player.sendOverlayMessage(Component.literal(cfg.tableOpenNotice.trim()).withStyle(ChatFormatting.AQUA));
+            }
+        });
     }
 
     /** Is this menu the modded (Chiseled Enchanter) table? Used by the lapis slot to accept only blocks there. */

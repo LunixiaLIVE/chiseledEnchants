@@ -57,6 +57,9 @@ public class ModConfig {
     public String recipeReplacesDiamond = "minecraft:netherite_ingot"; // the 2 DIAMOND slots (x2)
     public String recipeReplacesObsidian = "minecraft:obsidian";       // the 4 OBSIDIAN slots (x4)
 
+    /** Actionbar notice shown when a player opens the modded table. Blank = no notice. */
+    public String tableOpenNotice = "This table runs on lapis blocks";
+
     // ── Scan geometry (§2) — how much of the surrounding shelves the mod reads for targeting.
     //    Vanilla POWER is untouched (its own fixed ring, capped at 15); this only widens book capacity. ──
     /** Vertical layers scanned, from table level up. 2 = vanilla; 3 lets players stack shelves 3 high. */
