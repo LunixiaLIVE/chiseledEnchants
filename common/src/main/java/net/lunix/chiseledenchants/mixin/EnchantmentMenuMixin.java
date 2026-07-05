@@ -3,8 +3,10 @@ package net.lunix.chiseledenchants.mixin;
 import net.lunix.chiseledenchants.ChiseledEnchanting;
 import net.lunix.chiseledenchants.ModConfig;
 import net.lunix.chiseledenchants.ModdedTableHolder;
+import net.lunix.chiseledenchants.TableNotice;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Container;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.entity.player.Player;
@@ -64,9 +66,12 @@ public abstract class EnchantmentMenuMixin implements ModdedTableHolder {
     private void chiseledEnchants_openNotice(int id, Inventory inv, ContainerLevelAccess openAccess, CallbackInfo ci) {
         ModConfig cfg = ModConfig.get();
         if (cfg.tableOpenNotice == null || cfg.tableOpenNotice.isBlank()) return;
+        if (!(inv.player instanceof ServerPlayer sp)) return;
         openAccess.execute((level, pos) -> {
             if (!level.isClientSide() && ChiseledEnchanting.isModdedTable(level, pos)) {
-                inv.player.sendOverlayMessage(Component.literal(cfg.tableOpenNotice.trim()).withStyle(ChatFormatting.AQUA));
+                Component text = Component.literal(cfg.tableOpenNotice.trim()).withStyle(ChatFormatting.AQUA);
+                sp.sendSystemMessage(text);          // OPTION 1: chat (bottom-left)
+                TableNotice.showBoss(sp, text, 80);  // OPTION 2: boss bar (top, ~4s) — pick whichever fits
             }
         });
     }

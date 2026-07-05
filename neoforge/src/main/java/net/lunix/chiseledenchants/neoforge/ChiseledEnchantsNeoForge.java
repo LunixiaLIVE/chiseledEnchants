@@ -3,6 +3,7 @@ package net.lunix.chiseledenchants.neoforge;
 import net.lunix.chiseledenchants.ChiseledCommands;
 import net.lunix.chiseledenchants.ChiseledEnchantsCommon;
 import net.lunix.chiseledenchants.ParticleScheduler;
+import net.lunix.chiseledenchants.TableNotice;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.loading.FMLPaths;
@@ -26,5 +27,6 @@ public class ChiseledEnchantsNeoForge {
     @SubscribeEvent
     public void onServerTick(ServerTickEvent.Post event) {
         ParticleScheduler.tick(event.getServer());
+        TableNotice.tick(event.getServer());
     }
 }
