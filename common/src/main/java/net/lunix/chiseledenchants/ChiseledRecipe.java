@@ -39,7 +39,7 @@ public final class ChiseledRecipe {
     /** Build the recipe from the current config (vanilla enchanting-table shape with the configured swaps). */
     public static RecipeHolder<?> build() {
         ModConfig cfg = ModConfig.get();
-        Item book = item(cfg.recipeReplacesBook, Items.NETHER_STAR);
+        Item book = item(cfg.recipeReplacesBook, Items.DRAGON_HEAD);
         Item diamond = item(cfg.recipeReplacesDiamond, Items.NETHERITE_INGOT);
         Item obsidian = item(cfg.recipeReplacesObsidian, Items.OBSIDIAN);
 

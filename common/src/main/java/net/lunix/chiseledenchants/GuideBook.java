@@ -49,7 +49,7 @@ public final class GuideBook {
         String tableName = (cfg.specialTableName == null || cfg.specialTableName.isBlank())
                 ? "Arcane Enchanter" : cfg.specialTableName.trim();
         String acquire = cfg.craftOnlyTable
-                ? "Craft the \"" + tableName + "\" (nether star + netherite + obsidian). "
+                ? "Craft the \"" + tableName + "\" (dragon head + netherite + obsidian). "
                 : "Craft the \"" + tableName + "\", or anvil-rename an enchanting table to \"" + tableName + "\". ";
         String setup = requireTable
                 ? acquire + "Place chiseled bookshelves around it (usual enchanting spots, 1-block air gap) and "

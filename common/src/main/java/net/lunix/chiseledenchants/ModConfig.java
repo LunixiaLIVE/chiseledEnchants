@@ -53,7 +53,7 @@ public class ModConfig {
      * vanilla ingredient swapped for the item below (reads as "what replaces what"). Edit and run /reload to
      * apply. Unknown ids fall back to the default; the bundled datapack recipe is the fallback if it fails.
      */
-    public String recipeReplacesBook = "minecraft:nether_star";        // the BOOK slot (top center, x1)
+    public String recipeReplacesBook = "minecraft:dragon_head";        // the BOOK slot (top center, x1)
     public String recipeReplacesDiamond = "minecraft:netherite_ingot"; // the 2 DIAMOND slots (x2)
     public String recipeReplacesObsidian = "minecraft:obsidian";       // the 4 OBSIDIAN slots (x4)
 
