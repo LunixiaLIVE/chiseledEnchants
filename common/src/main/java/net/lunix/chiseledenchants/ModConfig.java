@@ -115,8 +115,8 @@ public class ModConfig {
     // ── Lapis BLOCKS — a flat cost unlocks the (single) option; blocks beyond it buy book protection. ──
     /**
      * Lapis blocks required to use the table's option. Blocks BEYOND this (up to a full 64 stack) each add
-     * {@link #protectionPerBlock}% book protection, so the default 14 leaves 50 in a stack → 100% at 2%/block.
-     * Default 14.
+     * {@link #protectionPerBlock} book protection, so the default 14 leaves 50 in a stack → full protection at
+     * 0.02 (2%) per block. Default 14.
      */
     public int lapisCost = 14;
     /**
@@ -126,15 +126,16 @@ public class ModConfig {
     public boolean bookProtectionEnabled = true;
     /**
      * Book protection added per lapis block placed BEYOND the option's required cost (only when protection is
-     * enabled). Those protection blocks are consumed too. Default 2.0 → 50 extra blocks reaches the cap below.
+     * enabled), as a 0–1 fraction to match {@link #bookConsumeChance}. Those protection blocks are consumed too.
+     * Default 0.02 (2% per block) → 50 extra blocks reaches the cap below.
      */
-    public double protectionPerBlock = 2.0;
+    public double protectionPerBlock = 0.02;
     /**
-     * Hard ceiling on book protection (%). Set BELOW 100 so players can never fully protect their books —
-     * there's always at least a (100 − this)% chance to lose one, no matter how much lapis they feed. Default
-     * 100 (full protection reachable). Blocks past what's needed to reach this cap aren't consumed.
+     * Hard ceiling on book protection, as a 0–1 fraction. Set BELOW 1 so players can never fully protect their
+     * books — there's always at least a (1 − this) chance to lose one, no matter how much lapis they feed.
+     * Default 1.0 (full protection reachable). Blocks past what's needed to reach this cap aren't consumed.
      */
-    public double maxProtectionPercent = 100.0;
+    public double maxProtection = 1.0;
 
     // ── Treasure enchants (§5) — guarantee-only; never in the vanilla random roll ──
     /** Master switch: treasure enchants may be guaranteed. Set false for fully-vanilla treasure (off). */

@@ -42,9 +42,10 @@ public final class GuideBook {
         int guarantee = chanceDenom;
         int maxCost = cfg.costOfMaxEnchant;
         int lapis = ChiseledEnchanting.lapisCost(cfg);
-        double perBlock = Math.max(0.0, cfg.protectionPerBlock);
-        String perBlockStr = perBlock == Math.floor(perBlock) ? Integer.toString((int) perBlock) : Double.toString(perBlock);
-        double maxProtPct = Math.max(0.0, Math.min(100.0, cfg.maxProtectionPercent));
+        // Config holds 0–1 fractions; the guide shows players percentages, so scale up for display.
+        double perBlockPct = Math.max(0.0, cfg.protectionPerBlock) * 100.0;
+        String perBlockStr = perBlockPct == Math.floor(perBlockPct) ? Integer.toString((int) perBlockPct) : Double.toString(perBlockPct);
+        double maxProtPct = Math.max(0.0, Math.min(100.0, cfg.maxProtection * 100.0));
         String maxProtStr = maxProtPct == Math.floor(maxProtPct) ? Integer.toString((int) maxProtPct) : Double.toString(maxProtPct);
         int eatPct = (int) Math.round(Math.max(0.0, Math.min(1.0, cfg.bookConsumeChance)) * 100);
         String tableName = (cfg.specialTableName == null || cfg.specialTableName.isBlank())
