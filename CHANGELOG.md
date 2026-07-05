@@ -2,7 +2,7 @@
 
 Minecraft **26.1, 26.1.1, 26.1.2** · Fabric + NeoForge · standalone (no Architectury API at runtime).
 
-## [1.0.0] — unreleased
+## [0.9.0] — pre-release
 ### Added
 - **Targeted enchanting.** Ring an enchanting table with chiseled bookshelves and stock them with
   single-enchant books to choose exactly what lands — the vanilla random roll is suppressed.
