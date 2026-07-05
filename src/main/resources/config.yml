@@ -11,9 +11,10 @@ requireSpecialTable: true
 specialTableName: "Chiseled Enchanter"
 craftOnlyTable: true
 
-# ── Economy ──
-# NOTE: on Paper the enchanting table's lapis slot takes GEMS (no mixin to widen it to blocks),
-# so the block-based cost/protection may be reworked during implementation.
+# ── Economy (lapis GEMS on Paper) ──
+# The Paper enchanting table takes lapis GEMS (a plugin can't widen the slot to blocks like the mod's
+# mixin does), so these counts are GEMS. Same numbers as the mod: 14 to enchant, +up to 50 surplus gems
+# for book protection (14 + 50 = a full 64-gem stack = 100% at 0.02/gem).
 lapisCost: 14
 costOfMaxEnchant: 10
 bookConsumeChance: 0.5
@@ -34,6 +35,11 @@ scanLayers: 2
 # ── Guide book (anvil-rename trigger) ──
 guideEnabled: true
 guideKeyword: "chiseledEnchants"
+
+# ── Per-enchant whitelist ──
+# Add "namespace:key: false" entries to bar specific enchants. Anything not listed is allowed.
+# e.g.  minecraft:mending: false
+enchantWhitelist: {}
 
 # ── Links (blank = hidden) ──
 linkGithub: "https://github.com/LunixiaLIVE/chiseledEnchants"

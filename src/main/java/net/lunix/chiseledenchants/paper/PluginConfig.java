@@ -1,7 +1,11 @@
 package net.lunix.chiseledenchants.paper;
 
+import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.plugin.Plugin;
+
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * In-memory config, loaded from {@code config.yml} and refreshed by {@code /cench reload}. Mirrors the mod's
@@ -31,7 +35,13 @@ public final class PluginConfig {
     public static boolean resolveConflicts = true;
     public static boolean allowCurses = false;
     public static boolean allowTreasureEnchants = true;
+    /** Whether the table may enchant a plain BOOK item (off by default — the table is for gear). */
     public static boolean allowBookEnchanting = false;
+    /** When book enchanting is on, allow mutually-conflicting enchants on one book. */
+    public static boolean allowConflictingOnBook = false;
+
+    /** Per-enchant whitelist ("namespace:key" → allowed). Absent = allowed. */
+    public static final Map<String, Boolean> enchantWhitelist = new HashMap<>();
 
     // ── Scan geometry ──
     public static int scanRadius = 2;
@@ -66,6 +76,11 @@ public final class PluginConfig {
         allowCurses = c.getBoolean("allowCurses", allowCurses);
         allowTreasureEnchants = c.getBoolean("allowTreasureEnchants", allowTreasureEnchants);
         allowBookEnchanting = c.getBoolean("allowBookEnchanting", allowBookEnchanting);
+        allowConflictingOnBook = c.getBoolean("allowConflictingOnBook", allowConflictingOnBook);
+
+        enchantWhitelist.clear();
+        ConfigurationSection wl = c.getConfigurationSection("enchantWhitelist");
+        if (wl != null) for (String key : wl.getKeys(false)) enchantWhitelist.put(key.toLowerCase(), wl.getBoolean(key));
 
         scanRadius = Math.max(2, c.getInt("scanRadius", scanRadius));
         scanLayers = Math.max(1, c.getInt("scanLayers", scanLayers));
