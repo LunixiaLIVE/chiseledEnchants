@@ -58,8 +58,9 @@ signed book, so it renders on a **vanilla client** with no resource pack.
 ## ⚙️ For server admins
 
 Everything is tunable, and it's meant to be. The config lives at **`config/chiseledenchants.json`** and
-**hot-reloads with `/cench reload`** — no restart needed. Here's the full file with defaults (grouped and
-annotated for readability; the real file is plain JSON):
+**hot-reloads with `/cench reload`** — no restart needed. All chance and protection values are **0–1
+fractions** (e.g. `0.5` = 50%). Here's the full file with defaults (grouped and annotated for readability;
+the real file is plain JSON):
 
 ```jsonc
 {
@@ -83,10 +84,10 @@ annotated for readability; the real file is plain JSON):
   "costOfMaxEnchant": 10,           // XP levels a maxed enchant costs (scales by level)
   "xpFromFirstLevels": true,        // charge cheap "first levels" points vs. levels off the top
   "lapisCost": 14,                  // lapis BLOCKS to unlock the option; surplus buys book protection
-  "bookConsumeChance": 0.5,         // chance a landed enchant eats one of its source books
+  "bookConsumeChance": 0.5,         // chance a landed enchant eats one of its source books (0–1)
   "bookProtectionEnabled": true,    // whether surplus lapis can protect books at all
-  "protectionPerBlock": 2.0,        // % protection per surplus lapis block
-  "maxProtectionPercent": 100.0,    // ceiling on protection (set below 100 to never fully protect)
+  "protectionPerBlock": 0.02,       // protection per surplus lapis block, 0–1 (0.02 = 2%)
+  "maxProtection": 1.0,             // ceiling on protection, 0–1 (set below 1.0 to never fully protect)
 
   // ── Rules ──
   "resolveConflicts": true,         // more-books-wins, tie blanks (false = any conflict blanks)
