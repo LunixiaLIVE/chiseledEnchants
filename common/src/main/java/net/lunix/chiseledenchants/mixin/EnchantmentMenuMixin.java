@@ -1,6 +1,7 @@
 package net.lunix.chiseledenchants.mixin;
 
 import net.lunix.chiseledenchants.ChiseledEnchanting;
+import net.lunix.chiseledenchants.ModdedTableHolder;
 import net.minecraft.world.Container;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.AbstractContainerMenu;
@@ -22,7 +23,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * shared between the displayed slots and the click so the previewed cost/level is exactly what's charged.
  */
 @Mixin(EnchantmentMenu.class)
-public abstract class EnchantmentMenuMixin {
+public abstract class EnchantmentMenuMixin implements ModdedTableHolder {
 
     @Shadow @Final private Container enchantSlots;
     @Shadow @Final private ContainerLevelAccess access;
@@ -51,5 +52,13 @@ public abstract class EnchantmentMenuMixin {
         if (container == enchantSlots) {
             ChiseledEnchanting.moddedSlots(enchantSlots, access, getEnchantmentSeed(), costs, enchantClue, levelClue);
         }
+    }
+
+    /** Is this menu the modded (Chiseled Enchanter) table? Used by the lapis slot to accept only blocks there. */
+    @Override
+    public boolean chiseledEnchants$isModdedTable() {
+        boolean[] modded = {false};
+        access.execute((level, pos) -> modded[0] = ChiseledEnchanting.isModdedTable(level, pos));
+        return modded[0];
     }
 }
