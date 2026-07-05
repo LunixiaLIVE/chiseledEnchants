@@ -98,7 +98,7 @@ public class ModConfig {
 
     // ── /cench about links — fill in and /cench reload; blank = shown as "coming soon" ──
     public String linkGithub = "https://github.com/LunixiaLIVE/chiseledEnchants";
-    public String linkModrinth = "";
+    public String linkModrinth = "https://modrinth.com/project/chiseledenchants";
     public String linkCurseforge = "";
     public String linkDiscord = "";
 
