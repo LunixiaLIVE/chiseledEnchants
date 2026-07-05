@@ -108,13 +108,18 @@ public final class ChiseledEnchanting {
             }
 
             // Lapis BLOCKS (and books) are consumed in BOTH game modes so the table's real cost shows even in
-            // creative. The option's required blocks unlock the level; every block BEYOND that adds
-            // protectionPerBlock% book protection (capped at 100%) and is eaten too. Excess past 100% is left.
-            double perBlock = Math.max(0.0, cfg.protectionPerBlock) / 100.0;
-            int blocksForFull = perBlock > 0.0 ? (int) Math.ceil(1.0 / perBlock) : 0;     // 50 blocks at 2%
-            int surplus = Math.max(0, lapisAvail - lapisRequired);
-            int protBlocks = Math.min(surplus, blocksForFull);
-            double protection = Math.min(1.0, protBlocks * perBlock);
+            // creative. The option's required blocks unlock the level. When book protection is ON, every block
+            // BEYOND that adds protectionPerBlock% protection up to the maxProtectionPercent ceiling and is eaten
+            // too (blocks past the ceiling aren't consumed); when OFF, only the required blocks are taken.
+            int protBlocks = 0;
+            double protection = 0.0;
+            if (cfg.bookProtectionEnabled) {
+                double perBlock = Math.max(0.0, cfg.protectionPerBlock) / 100.0;
+                double maxProt = Math.max(0.0, Math.min(1.0, cfg.maxProtectionPercent / 100.0));
+                int blocksForCap = perBlock > 0.0 ? (int) Math.ceil(maxProt / perBlock) : 0;
+                protBlocks = Math.min(Math.max(0, lapisAvail - lapisRequired), blocksForCap);
+                protection = Math.min(maxProt, protBlocks * perBlock);
+            }
             int lapisSpent = lapisRequired + protBlocks;
             lapis.shrink(lapisSpent);
             double consume = cfg.bookConsumeChance * (1.0 - protection);

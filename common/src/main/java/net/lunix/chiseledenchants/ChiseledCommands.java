@@ -236,9 +236,10 @@ public final class ChiseledCommands {
                         + (p.xpLevels() == 1 ? "" : "s") + " + " + p.lapisCost() + " lapis block"
                         + (p.lapisCost() == 1 ? "" : "s"))
                         .withStyle(ChatFormatting.GOLD), false);
-                src.sendSuccess(() -> Component.literal(
-                        "Cheaper options cost less lapis + fewer levels; extra lapis blocks buy book protection.")
-                        .withStyle(ChatFormatting.DARK_GRAY), false);
+                String note = ModConfig.get().bookProtectionEnabled
+                        ? "Cheaper options cost less lapis + fewer levels; extra lapis blocks buy book protection."
+                        : "Cheaper options cost less lapis + fewer levels.";
+                src.sendSuccess(() -> Component.literal(note).withStyle(ChatFormatting.DARK_GRAY), false);
             }
         }
     }

@@ -67,12 +67,12 @@ public class ModConfig {
     /** Horizontal reach of the shelf scan (clamped to a minimum of 2 — the air gap owns distance 1). */
     public int scanRadius = 2;
     /**
-     * Base chance per landed enchant that its lowest-level source book is eaten (§7). Default 1.0 =
-     * a book is ALWAYS consumed unless lapis protection reduces it: effective = this × (1 − protection),
-     * where protection comes from lapis blocks beyond the option's cost ({@link #protectionPerBlock}).
+     * Base chance per landed enchant that its lowest-level source book is eaten (§7). Default 0.5 =
+     * a 50% chance per book, unless lapis protection reduces it: effective = this × (1 − protection), where
+     * protection comes from lapis blocks beyond the option's cost ({@link #protectionPerBlock}).
      * Lowest-level book of the enchant is eaten first.
      */
-    public double bookConsumeChance = 1.0;
+    public double bookConsumeChance = 0.5;
 
     // ── /cench find particle trace ──
     /** How many times the trace pulse repeats. Default 10. */
@@ -114,10 +114,21 @@ public class ModConfig {
     /** Lapis blocks required to use the LAST (max-level) option. Default 6. */
     public int lapisHigh = 6;
     /**
-     * Book protection added per lapis block placed BEYOND the option's required cost (capped at 100%). Those
-     * protection blocks are consumed too. Default 2.0 → 50 extra blocks = 100% protection.
+     * Whether extra lapis blocks can buy book protection at all. false = the table consumes ONLY the option's
+     * required blocks (no protection, no surplus taken); books are eaten at {@link #bookConsumeChance}. Default true.
+     */
+    public boolean bookProtectionEnabled = true;
+    /**
+     * Book protection added per lapis block placed BEYOND the option's required cost (only when protection is
+     * enabled). Those protection blocks are consumed too. Default 2.0 → 50 extra blocks reaches the cap below.
      */
     public double protectionPerBlock = 2.0;
+    /**
+     * Hard ceiling on book protection (%). Set BELOW 100 so players can never fully protect their books —
+     * there's always at least a (100 − this)% chance to lose one, no matter how much lapis they feed. Default
+     * 100 (full protection reachable). Blocks past what's needed to reach this cap aren't consumed.
+     */
+    public double maxProtectionPercent = 100.0;
 
     // ── Treasure enchants (§5) — guarantee-only; never in the vanilla random roll ──
     /** Master switch: treasure enchants may be guaranteed. Set false for fully-vanilla treasure (off). */

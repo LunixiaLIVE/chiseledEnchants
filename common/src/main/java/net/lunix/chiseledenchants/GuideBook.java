@@ -46,7 +46,9 @@ public final class GuideBook {
         int lapisHigh = Math.max(0, cfg.lapisHigh);
         double perBlock = Math.max(0.0, cfg.protectionPerBlock);
         String perBlockStr = perBlock == Math.floor(perBlock) ? Integer.toString((int) perBlock) : Double.toString(perBlock);
-        int blocksForFull = perBlock > 0 ? (int) Math.ceil(100.0 / perBlock) : 0;
+        double maxProtPct = Math.max(0.0, Math.min(100.0, cfg.maxProtectionPercent));
+        String maxProtStr = maxProtPct == Math.floor(maxProtPct) ? Integer.toString((int) maxProtPct) : Double.toString(maxProtPct);
+        int blocksForCap = perBlock > 0 ? (int) Math.ceil(maxProtPct / perBlock) : 0;
         int eatPct = (int) Math.round(Math.max(0.0, Math.min(1.0, cfg.bookConsumeChance)) * 100);
         String xpWhere = cfg.xpFromFirstLevels ? "from your first levels" : "off the top of your levels";
         boolean requireTable = cfg.requireSpecialTable;
@@ -60,6 +62,12 @@ public final class GuideBook {
                   + "fill them with single-enchant books.\n\nMixing in regular shelves blanks the options."
                 : "Place chiseled bookshelves around an enchanting table (usual spots, 1-block air gap) and fill "
                   + "them with single-enchant books.\n\nMixing in regular shelves blanks the options.";
+        String protectPage = cfg.bookProtectionEnabled
+                ? "Without spare lapis, each applied enchant has a " + eatPct + "% chance to eat its book.\n\n"
+                  + "Each lapis block beyond an option's cost adds " + perBlockStr + "% protection, up to "
+                  + maxProtStr + "% (~" + blocksForCap + " extra blocks). Those blocks are consumed too."
+                : "Each applied enchant has a " + eatPct + "% chance to eat its book.\n\nBook protection is off "
+                  + "here — extra lapis does nothing; the table only takes each option's required blocks.";
 
         List<Filterable<Component>> pages = List.of(
                 page("chiseledEnchants",
@@ -80,10 +88,7 @@ public final class GuideBook {
                         "XP: about " + maxCost + " levels per maxed enchant, charged " + xpWhere + " (per enchant "
                         + "that lands).\n\nLapis BLOCKS, not gems: " + lapisLow + "–" + lapisHigh + " per option. "
                         + "See /cench table for the exact cost."),
-                page("Protecting books",
-                        "Without spare lapis, each applied enchant has a " + eatPct + "% chance to eat its book.\n\n"
-                        + "Each lapis block beyond an option's cost adds " + perBlockStr + "% protection, up to 100% "
-                        + "(~" + blocksForFull + " extra blocks). Those blocks are consumed too."),
+                page("Protecting books", protectPage),
                 page("Commands",
                         "/cench — shelf summary\n\n/cench preview — what applies to your held item\n\n"
                         + "/cench table — what the shelves apply\n\n/cench find <enchant> — trace it"),
