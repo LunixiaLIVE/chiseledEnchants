@@ -73,7 +73,8 @@ public final class ChiseledEnchanting {
 
             RandomSource rng = level.getRandom();                       // truly-random book consumption
             Map<Holder<Enchantment>, List<Book>> byEnchant = scan(level, tablePos);
-            if (!cfg.resolveConflicts && hasConflict(byEnchant, item, isBook, cfg)) return;   // conflicting library — table is blank
+            if (cfg.resolveConflicts ? tieConflict(byEnchant, item, isBook, cfg)
+                    : hasConflict(byEnchant, item, isBook, cfg)) return;   // conflicting library — table is blank
             List<Landed> landed = resolve(byEnchant, item, isBook, slotId, seed, cfg);   // same seed as the displayed slot
             if (landed.isEmpty()) return;
 
@@ -169,7 +170,8 @@ public final class ChiseledEnchanting {
             boolean err = item.isEmpty() || !item.isEnchantable()
                     || (isBook && !cfg.allowBookEnchanting)
                     || hasMixedShelves(level, tablePos)
-                    || (!cfg.resolveConflicts && hasConflict(byEnchant, item, isBook, cfg));
+                    || (cfg.resolveConflicts ? tieConflict(byEnchant, item, isBook, cfg)
+                            : hasConflict(byEnchant, item, isBook, cfg));
             ItemStack lapis = enchantSlots.getItem(1);
             int lapisAvail = lapis.is(Items.LAPIS_BLOCK) ? lapis.getCount() : 0;   // an option only unlocks once its lapis is in
             for (int i = 0; i < 3; i++) {
@@ -260,6 +262,35 @@ public final class ChiseledEnchanting {
     }
 
     /**
+     * With resolveConflicts on, two conflicting contenders TIED on book count is ambiguous → blank the table so
+     * the player can see it (/cench table) and add a book to break the tie, instead of a coin-flip enchant. A
+     * clear winner (more books) does not error. {@code item} may be null for an item-agnostic check.
+     */
+    public static boolean tieConflict(Map<Holder<Enchantment>, List<Book>> byEnchant, ItemStack item, boolean isBook, ModConfig cfg) {
+        if (isBook && cfg.allowConflictingOnBook) return false;
+        List<Map.Entry<Holder<Enchantment>, List<Book>>> contenders = new ArrayList<>();
+        for (Map.Entry<Holder<Enchantment>, List<Book>> e : byEnchant.entrySet()) {
+            boolean applicable = isBook || item == null || e.getKey().value().canEnchant(item);
+            if (eligible(e.getKey(), cfg) && applicable) contenders.add(e);
+        }
+        contenders.sort(Comparator.comparingInt(
+                (Map.Entry<Holder<Enchantment>, List<Book>> e) -> e.getValue().size()).reversed());
+        List<Map.Entry<Holder<Enchantment>, List<Book>>> kept = new ArrayList<>();
+        for (Map.Entry<Holder<Enchantment>, List<Book>> g : contenders) {
+            boolean dropped = false;
+            for (Map.Entry<Holder<Enchantment>, List<Book>> k : kept) {
+                if (!Enchantment.areCompatible(k.getKey(), g.getKey())) {
+                    if (k.getValue().size() == g.getValue().size()) return true;   // equal books + conflict = ambiguous
+                    dropped = true;                                                // g loses to a higher-count enchant
+                    break;
+                }
+            }
+            if (!dropped) kept.add(g);
+        }
+        return false;
+    }
+
+    /**
      * Item-specific readout of what this table will do to {@code item} (for the /cench preview command —
      * players get the info from chat instead of the one-enchant-per-slot vanilla tooltip). Deterministic:
      * reports every eligible, item-applicable stocked enchant at its TOP-slot level + land chance, plus the
@@ -275,7 +306,8 @@ public final class ChiseledEnchanting {
         if (isBook && !cfg.allowBookEnchanting) return new TablePreview(TablePreview.Kind.BOOK_DISABLED, List.of(), 0, 0);
         if (!isBook && !item.isEnchantable()) return new TablePreview(TablePreview.Kind.NOT_ENCHANTABLE, List.of(), 0, 0);
         Map<Holder<Enchantment>, List<Book>> byEnchant = scan(level, tablePos);
-        if (!cfg.resolveConflicts && hasConflict(byEnchant, item, isBook, cfg))
+        if (cfg.resolveConflicts ? tieConflict(byEnchant, item, isBook, cfg)
+                : hasConflict(byEnchant, item, isBook, cfg))
             return new TablePreview(TablePreview.Kind.CONFLICT, List.of(), 0, 0);
 
         int chanceDenom = chanceDenom(cfg), levelDenom = levelDenom(cfg);
@@ -312,8 +344,11 @@ public final class ChiseledEnchanting {
         ModConfig cfg = ModConfig.get();
         Map<Holder<Enchantment>, List<Book>> byEnchant = scan(level, tablePos);
 
-        // Item-agnostic conflict: with resolveConflicts off, any two conflicting stocked enchants blank a table.
-        if (!cfg.resolveConflicts) {
+        // Item-agnostic conflict: resolveConflicts on → only an equal-book tie blanks; off → any conflict blanks.
+        if (cfg.resolveConflicts) {
+            if (tieConflict(byEnchant, null, false, cfg))
+                return new TablePreview(TablePreview.Kind.CONFLICT, List.of(), 0, 0);
+        } else {
             List<Holder<Enchantment>> elig = new ArrayList<>();
             for (Holder<Enchantment> e : byEnchant.keySet()) if (eligible(e, cfg)) elig.add(e);
             for (int i = 0; i < elig.size(); i++)

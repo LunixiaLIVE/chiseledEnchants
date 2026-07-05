@@ -207,9 +207,12 @@ public final class ChiseledCommands {
             case MIXED -> src.sendSuccess(() -> Component.literal(
                     "⚠ Mixed shelves (chiseled + regular). The table is blanked — remove the regular bookshelves.")
                     .withStyle(ChatFormatting.RED), false);
-            case CONFLICT -> src.sendSuccess(() -> Component.literal(
-                    "⚠ Conflicting enchants stocked (e.g. Sharpness + Smite). The table is blanked — remove the conflicts.")
-                    .withStyle(ChatFormatting.RED), false);
+            case CONFLICT -> {
+                String cmsg = ModConfig.get().resolveConflicts
+                        ? "⚠ Conflicting enchants are tied on book count (e.g. 6 Sharpness + 6 Smite). Add a book to one to break the tie."
+                        : "⚠ Conflicting enchants stocked (e.g. Sharpness + Smite). The table is blanked — remove the conflicts.";
+                src.sendSuccess(() -> Component.literal(cmsg).withStyle(ChatFormatting.RED), false);
+            }
             case BOOK_DISABLED -> src.sendSuccess(() -> Component.literal(
                     "You're holding a book, but book enchanting is disabled (allowBookEnchanting).")
                     .withStyle(ChatFormatting.YELLOW), false);

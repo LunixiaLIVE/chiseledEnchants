@@ -64,10 +64,11 @@ public final class GuideBook {
                 : "Each enchant applied has a " + eatPct + "% chance to eat its book.\n\nProtection is off — extra "
                   + "lapis does nothing.";
         String conflictNote = cfg.resolveConflicts
-                ? "Conflicting enchants? The one with more books wins."
+                ? "Conflicting enchants? More books wins. An equal tie blanks it — add a book to break it."
                 : "Don't stock conflicting enchants — it blanks the options.";
         String blankReasons = cfg.resolveConflicts
-                ? "Options blank when:\n\n• mixed chiseled + regular shelves\n\n• too little lapis for the option."
+                ? "Options blank when:\n\n• mixed chiseled + regular shelves\n\n• tied conflicting enchants\n\n"
+                  + "• too little lapis."
                 : "Options blank when:\n\n• mixed chiseled + regular shelves\n\n• conflicting enchants stocked\n\n"
                   + "• too little lapis.";
 
