@@ -58,20 +58,66 @@ signed book, so it renders on a **vanilla client** with no resource pack.
 ## ⚙️ For server admins
 
 Everything is tunable, and it's meant to be. The config lives at **`config/chiseledenchants.json`** and
-**hot-reloads with `/cench reload`** — no restart needed — so admins can shape the balance and rules however
-they see fit:
+**hot-reloads with `/cench reload`** — no restart needed. Here's the full file with defaults (grouped and
+annotated for readability; the real file is plain JSON):
 
-- **Guarantee strength** — max-level books needed for a 100% land (`booksForFullChance`).
-- **Economy** — lapis-block cost (`lapisCost`), XP per maxed enchant (`costOfMaxEnchant`), and book
-  consumption + protection (`bookConsumeChance`, `bookProtectionEnabled`, `protectionPerBlock`,
-  `maxProtectionPercent`).
-- **Rules** — conflict handling (`resolveConflicts`), curse/treasure master switches, book enchanting, and
-  a **per-enchant whitelist** auto-filled from the live registry (flip any enchant on or off).
-- **The special table** — whether it's required (`requireSpecialTable`), craft-only gating
-  (`craftOnlyTable`), its name, and the crafting-recipe ingredients.
-- **Scan geometry, the particle trace, the guide keyword, and community links.**
+```jsonc
+{
+  // ── Guarantee strength ──
+  "booksForFullChance": 6,          // max-level books of an enchant for a 100% chance to land
 
-Edit the file and run `/cench reload`; the next guide book made reflects the new numbers automatically.
+  // ── The special "Chiseled Enchanter" table ──
+  "requireSpecialTable": true,      // gate targeting to the crafted table (false = any table + chiseled shelves)
+  "specialTableName": "Chiseled Enchanter",
+  "craftOnlyTable": true,           // require the recipe's rarity-colored name (an anvil can't forge it)
+  "recipeReplacesBook": "minecraft:dragon_head",        // the recipe's book slot
+  "recipeReplacesDiamond": "minecraft:netherite_ingot", // the 2 diamond slots
+  "recipeReplacesObsidian": "minecraft:obsidian",       // the 4 obsidian slots
+  "tableOpenNotice": "This table runs on lapis blocks", // green status-bar text (blank = the table's name)
+
+  // ── Scan geometry (book capacity only; vanilla enchanting power is untouched) ──
+  "scanLayers": 2,                  // vertical layers scanned, from table level up
+  "scanRadius": 2,                  // horizontal reach of the shelf scan
+
+  // ── Economy ──
+  "costOfMaxEnchant": 10,           // XP levels a maxed enchant costs (scales by level)
+  "xpFromFirstLevels": true,        // charge cheap "first levels" points vs. levels off the top
+  "lapisCost": 14,                  // lapis BLOCKS to unlock the option; surplus buys book protection
+  "bookConsumeChance": 0.5,         // chance a landed enchant eats one of its source books
+  "bookProtectionEnabled": true,    // whether surplus lapis can protect books at all
+  "protectionPerBlock": 2.0,        // % protection per surplus lapis block
+  "maxProtectionPercent": 100.0,    // ceiling on protection (set below 100 to never fully protect)
+
+  // ── Rules ──
+  "resolveConflicts": true,         // more-books-wins, tie blanks (false = any conflict blanks)
+  "allowTreasureEnchants": true,    // treasure enchants (Mending, Soul Speed…) may be guaranteed
+  "allowCurses": false,             // allow curses to be applied
+  "allowBookEnchanting": false,     // let the table enchant a book item
+  "allowConflictingOnBook": false,  // permit mutually-conflicting enchants on a book
+  "enchantWhitelist": {},           // auto-filled from the live registry on first start; flip any to false
+
+  // ── In-game guide book ──
+  "guideEnabled": true,
+  "guideKeyword": "chiseledEnchants", // anvil-rename a book & quill to this to receive the guide
+  "guideAnvilCost": 1,              // anvil XP-level cost to make the guide
+
+  // ── /cench find particle trace ──
+  "particleRepeats": 10,
+  "particleDurationTicks": 20,
+  "particleFromTable": true,        // pulses flow table → shelves (false = shelves → table)
+
+  // ── Community links (blank = shown as "coming soon") ──
+  "linkGithub": "https://github.com/LunixiaLIVE/chiseledEnchants",
+  "linkModrinth": "",
+  "linkCurseforge": "",
+  "linkDiscord": ""
+}
+```
+
+> [!TIP]
+> `enchantWhitelist` fills itself in on first launch with **every** enchant (modded included) set to `true`
+> — flip any to `false` to bar it. Edit the file and run `/cench reload`; the next guide book made reflects
+> the new numbers automatically.
 
 ## 📦 Versions &amp; downloads
 
