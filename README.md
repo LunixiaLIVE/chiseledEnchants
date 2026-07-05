@@ -6,6 +6,8 @@
 
 ![](https://img.shields.io/badge/Fabric-DBA463?style=for-the-badge&logoColor=white)&nbsp;![](https://img.shields.io/badge/NeoForge-F16436?style=for-the-badge&logoColor=white)&nbsp;
 
+[![](https://img.shields.io/badge/Download_on-Modrinth-00AF5C?style=for-the-badge&logo=modrinth&logoColor=white)](https://modrinth.com/project/chiseledenchants)&nbsp;<sub>CurseForge — coming soon</sub>
+
 ![](https://img.shields.io/badge/Minecraft-26.x-62B47A?style=flat-square) ![](https://img.shields.io/badge/Server--side-vanilla_clients_OK-8E44AD?style=flat-square) ![](https://img.shields.io/badge/Fabric_API-required_on_Fabric-4A90D9?style=flat-square) ![](https://img.shields.io/badge/License-MIT-blue?style=flat-square) ![](https://img.shields.io/badge/Status-feature--complete-brightgreen?style=flat-square)
 
 </div>
@@ -109,8 +111,8 @@ the real file is plain JSON):
 
   // ── Community links (blank = shown as "coming soon") ──
   "linkGithub": "https://github.com/LunixiaLIVE/chiseledEnchants",
-  "linkModrinth": "",
-  "linkCurseforge": "",
+  "linkModrinth": "https://modrinth.com/project/chiseledenchants",
+  "linkCurseforge": "",             // still in the works
   "linkDiscord": ""
 }
 ```
