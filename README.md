@@ -6,7 +6,7 @@
 
 ![](https://img.shields.io/badge/Fabric-DBA463?style=for-the-badge&logoColor=white)&nbsp;![](https://img.shields.io/badge/NeoForge-F16436?style=for-the-badge&logoColor=white)&nbsp;
 
-![](https://img.shields.io/badge/Minecraft-26.x-62B47A?style=flat-square) ![](https://img.shields.io/badge/Server--side-vanilla_clients_OK-8E44AD?style=flat-square) ![](https://img.shields.io/badge/Architectury-not_required-2ECC71?style=flat-square) ![](https://img.shields.io/badge/Fabric_API-required_on_Fabric-4A90D9?style=flat-square) ![](https://img.shields.io/badge/License-MIT-blue?style=flat-square) ![](https://img.shields.io/badge/Status-feature--complete-brightgreen?style=flat-square)
+![](https://img.shields.io/badge/Minecraft-26.x-62B47A?style=flat-square) ![](https://img.shields.io/badge/Server--side-vanilla_clients_OK-8E44AD?style=flat-square) ![](https://img.shields.io/badge/Fabric_API-required_on_Fabric-4A90D9?style=flat-square) ![](https://img.shields.io/badge/License-MIT-blue?style=flat-square) ![](https://img.shields.io/badge/Status-feature--complete-brightgreen?style=flat-square)
 
 </div>
 
@@ -86,7 +86,7 @@ Edit the file and run `/cench reload`; the next guide book made reflects the new
 
 > [!TIP]
 > Every `multi_*` branch builds **one universal jar** that runs on **both** Fabric and NeoForge (per-loader
-> `-fabric` / `-neoforge` jars are produced too). Fully standalone — **no Architectury API at runtime**.
+> `-fabric` / `-neoforge` jars are produced too). Fully self-contained — **no extra library mods to install**.
 
 <details>
 <summary>🛠️ <b>Building from source</b></summary>
