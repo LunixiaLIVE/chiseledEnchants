@@ -42,12 +42,36 @@ path driven by the bookshelves around your table:
 - **Treasure enchants** (Mending, Soul Speed, …) are **guarantee-only** — never from a random roll — with a
   per-enchant whitelist and curse/treasure master switches.
 - **`/cench`** summarizes a table's setup, **previews** what you'll get, **finds** your books (colored
-  particle threads to each shelf), and **reloads** config live. An in-game **guide book** (anvil-rename a
-  book & quill to `chiseledEnchants`) explains everything, generated from your server's live settings.
+  particle threads to each shelf), and **reloads** config live.
 - **Server-side** — a **vanilla client** can join a modded server and it just works. Runs in single-player too.
 
 Books are sourced the intended way — **villager librarian trades**. No new blocks or items; it reuses
 vanilla chiseled bookshelves and lapis blocks.
+
+## 📖 In-game guide book
+
+Players don't need a wiki. **Rename a book &amp; quill to `chiseledEnchants` in an anvil** to receive a
+detailed in-game guide — how the table works, the max-books rule, costs, the status bar, and the commands —
+written from **your server's live config**, so every number matches your actual settings. It's a normal
+signed book, so it renders on a **vanilla client** with no resource pack.
+
+## ⚙️ For server admins
+
+Everything is tunable, and it's meant to be. The config lives at **`config/chiseledenchants.json`** and
+**hot-reloads with `/cench reload`** — no restart needed — so admins can shape the balance and rules however
+they see fit:
+
+- **Guarantee strength** — max-level books needed for a 100% land (`booksForFullChance`).
+- **Economy** — lapis-block cost (`lapisCost`), XP per maxed enchant (`costOfMaxEnchant`), and book
+  consumption + protection (`bookConsumeChance`, `bookProtectionEnabled`, `protectionPerBlock`,
+  `maxProtectionPercent`).
+- **Rules** — conflict handling (`resolveConflicts`), curse/treasure master switches, book enchanting, and
+  a **per-enchant whitelist** auto-filled from the live registry (flip any enchant on or off).
+- **The special table** — whether it's required (`requireSpecialTable`), craft-only gating
+  (`craftOnlyTable`), its name, and the crafting-recipe ingredients.
+- **Scan geometry, the particle trace, the guide keyword, and community links.**
+
+Edit the file and run `/cench reload`; the next guide book made reflects the new numbers automatically.
 
 ## 📦 Versions &amp; downloads
 
