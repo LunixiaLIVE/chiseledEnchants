@@ -70,7 +70,7 @@ public abstract class EnchantmentMenuMixin implements ModdedTableHolder {
         openAccess.execute((level, pos) -> {
             if (!level.isClientSide() && ChiseledEnchanting.isModdedTable(level, pos)) {
                 Component text = Component.literal(cfg.tableOpenNotice.trim()).withStyle(ChatFormatting.AQUA);
-                TableNotice.showBoss(sp, text, 80);   // boss bar at the top for ~4s (also cleared when the table closes)
+                TableNotice.showBoss(sp, text);   // boss bar at the top; stays until they leave the table
             }
         });
     }
