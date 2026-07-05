@@ -237,7 +237,7 @@ public final class ChiseledCommands {
                         + (p.lapisCost() == 1 ? "" : "s"))
                         .withStyle(ChatFormatting.GOLD), false);
                 src.sendSuccess(() -> Component.literal(
-                        "The two cheaper slots apply reduced levels; a full stack of lapis blocks protects your books.")
+                        "Cheaper options cost less lapis + fewer levels; extra lapis blocks buy book protection.")
                         .withStyle(ChatFormatting.DARK_GRAY), false);
             }
         }

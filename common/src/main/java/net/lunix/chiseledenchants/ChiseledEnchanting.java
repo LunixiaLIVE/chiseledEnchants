@@ -77,12 +77,12 @@ public final class ChiseledEnchanting {
             List<Landed> landed = resolve(byEnchant, item, isBook, slotId, seed, cfg);   // same seed as the displayed slot
             if (landed.isEmpty()) return;
 
-            int xpLevels = xpCost(landed, cfg);                         // §5/§6 — 1 lapis block per enchant below
-            int lapisCost = landed.size();
+            int xpLevels = xpCost(landed, cfg);                         // §5/§6 — XP is per landed enchant
+            int lapisRequired = slotLapis(slotId, cfg);                 // §6 — a fixed per-OPTION cost unlocks this level
             ItemStack lapis = enchantSlots.getItem(1);
             int lapisAvail = lapis.is(Items.LAPIS_BLOCK) ? lapis.getCount() : 0;   // the table requires lapis BLOCKS (gems don't count)
             boolean creative = player.hasInfiniteMaterials();
-            if (!creative && lapisAvail < lapisCost) {
+            if (!creative && lapisAvail < lapisRequired) {
                 if (lapis.is(Items.LAPIS_LAZULI)) {   // used gems — nudge toward blocks (we can't repaint the slot icon)
                     player.sendOverlayMessage(Component.literal("The " + cfg.specialTableName
                             + " needs lapis BLOCKS, not gems.").withStyle(ChatFormatting.RED));
@@ -108,14 +108,14 @@ public final class ChiseledEnchanting {
             }
 
             // Lapis BLOCKS (and books) are consumed in BOTH game modes so the table's real cost shows even in
-            // creative. The table EATS lapis blocks to BUY book protection (§7): a full stack of blocks
-            // (lapisForFullProtection, which includes the per-enchant cost) = 100% protection and is fully
-            // consumed; every block beyond the enchant cost reduces book loss and is eaten too; anything past a
-            // full stack is left in the slot.
-            int fullProt = Math.max(lapisCost, cfg.lapisForFullProtection);
-            int lapisSpent = Math.min(lapisAvail, fullProt);                              // eat up to a full stack (blocks)
-            double protection = Math.max(0.0, Math.min(1.0,
-                    (double) (lapisSpent - lapisCost) / Math.max(1, fullProt - lapisCost)));
+            // creative. The option's required blocks unlock the level; every block BEYOND that adds
+            // protectionPerBlock% book protection (capped at 100%) and is eaten too. Excess past 100% is left.
+            double perBlock = Math.max(0.0, cfg.protectionPerBlock) / 100.0;
+            int blocksForFull = perBlock > 0.0 ? (int) Math.ceil(1.0 / perBlock) : 0;     // 50 blocks at 2%
+            int surplus = Math.max(0, lapisAvail - lapisRequired);
+            int protBlocks = Math.min(surplus, blocksForFull);
+            double protection = Math.min(1.0, protBlocks * perBlock);
+            int lapisSpent = lapisRequired + protBlocks;
             lapis.shrink(lapisSpent);
             double consume = cfg.bookConsumeChance * (1.0 - protection);
             for (Landed l : landed) {
@@ -123,7 +123,7 @@ public final class ChiseledEnchanting {
                 l.books().stream().min(Comparator.comparingInt(Book::level)).ifPresent(b -> consumeBook(level, b));
             }
 
-            player.onEnchantmentPerformed(item, lapisCost);
+            player.onEnchantmentPerformed(item, lapisSpent);
             enchantSlots.setChanged();
             result[0] = Boolean.TRUE;
         });
@@ -280,7 +280,7 @@ public final class ChiseledEnchanting {
         }
         if (lines.isEmpty()) return new TablePreview(TablePreview.Kind.NONE_APPLICABLE, List.of(), 0, 0);
         lines.sort(Comparator.comparingDouble(PreviewEnchant::landChance).reversed());
-        return new TablePreview(TablePreview.Kind.OK, lines, xpCost(forCost, cfg), forCost.size());
+        return new TablePreview(TablePreview.Kind.OK, lines, xpCost(forCost, cfg), Math.max(0, cfg.lapisHigh));
     }
 
     /**
@@ -321,7 +321,7 @@ public final class ChiseledEnchanting {
         }
         if (lines.isEmpty()) return new TablePreview(TablePreview.Kind.NONE_APPLICABLE, List.of(), 0, 0);
         lines.sort(Comparator.comparingDouble(PreviewEnchant::landChance).reversed());
-        return new TablePreview(TablePreview.Kind.OK, lines, xpCost(forCost, cfg), forCost.size());
+        return new TablePreview(TablePreview.Kind.OK, lines, xpCost(forCost, cfg), Math.max(0, cfg.lapisHigh));
     }
 
     /** Total XP levels the modded enchant costs = Σ ceil(costOfMaxEnchant × level / maxLevel), no cap. */
@@ -340,6 +340,16 @@ public final class ChiseledEnchanting {
         if (level <= 16) return level * level + 6 * level;
         if (level <= 31) return (int) (2.5 * level * level - 40.5 * level + 360.0);
         return (int) (4.5 * level * level - 162.5 * level + 2220.0);
+    }
+
+    /** Lapis blocks required to use an option: slot 0 = low, 1 = mid, 2 (top) = high. */
+    public static int slotLapis(int slotId, ModConfig cfg) {
+        int v = switch (slotId) {
+            case 0 -> cfg.lapisLow;
+            case 1 -> cfg.lapisMid;
+            default -> cfg.lapisHigh;
+        };
+        return Math.max(0, v);
     }
 
     /**

@@ -69,8 +69,8 @@ public class ModConfig {
     /**
      * Base chance per landed enchant that its lowest-level source book is eaten (§7). Default 1.0 =
      * a book is ALWAYS consumed unless lapis protection reduces it: effective = this × (1 − protection),
-     * where protection scales to 1.0 at a full stack ({@link #lapisForFullProtection}). So "100% unless
-     * you feed a stack of lapis." Lowest-level book of the enchant is eaten first.
+     * where protection comes from lapis blocks beyond the option's cost ({@link #protectionPerBlock}).
+     * Lowest-level book of the enchant is eaten first.
      */
     public double bookConsumeChance = 1.0;
 
@@ -106,12 +106,18 @@ public class ModConfig {
      * higher your level). Default true.
      */
     public boolean xpFromFirstLevels = true;
+    // ── Lapis BLOCKS — a fixed per-OPTION cost unlocks that level; blocks beyond it buy book protection. ──
+    /** Lapis blocks required to use the FIRST (cheapest) option. Default 4. */
+    public int lapisLow = 4;
+    /** Lapis blocks required to use the MIDDLE option. Default 4. */
+    public int lapisMid = 4;
+    /** Lapis blocks required to use the LAST (max-level) option. Default 6. */
+    public int lapisHigh = 6;
     /**
-     * Total lapis BLOCKS the table CONSUMES for 100% book protection — a full stack by default. The per-enchant
-     * cost counts toward this; every block beyond the enchant cost (up to this) buys protection and is eaten too,
-     * so full protection costs a stack of lapis blocks (a real end-game sink). Excess past this is left behind.
+     * Book protection added per lapis block placed BEYOND the option's required cost (capped at 100%). Those
+     * protection blocks are consumed too. Default 2.0 → 50 extra blocks = 100% protection.
      */
-    public int lapisForFullProtection = 64;
+    public double protectionPerBlock = 2.0;
 
     // ── Treasure enchants (§5) — guarantee-only; never in the vanilla random roll ──
     /** Master switch: treasure enchants may be guaranteed. Set false for fully-vanilla treasure (off). */

@@ -42,7 +42,11 @@ public final class GuideBook {
         int levelDenom = ChiseledEnchanting.levelDenom(cfg);
         int guarantee = Math.max(chanceDenom, levelDenom);
         int maxCost = cfg.costOfMaxEnchant;
-        int fullProt = Math.max(1, cfg.lapisForFullProtection);
+        int lapisLow = Math.max(0, cfg.lapisLow);
+        int lapisHigh = Math.max(0, cfg.lapisHigh);
+        double perBlock = Math.max(0.0, cfg.protectionPerBlock);
+        String perBlockStr = perBlock == Math.floor(perBlock) ? Integer.toString((int) perBlock) : Double.toString(perBlock);
+        int blocksForFull = perBlock > 0 ? (int) Math.ceil(100.0 / perBlock) : 0;
         int eatPct = (int) Math.round(Math.max(0.0, Math.min(1.0, cfg.bookConsumeChance)) * 100);
         String xpWhere = cfg.xpFromFirstLevels ? "from your first levels" : "off the top of your levels";
         boolean requireTable = cfg.requireSpecialTable;
@@ -71,11 +75,12 @@ public final class GuideBook {
                         + "stocked, compatible enchant applies together on the item you insert."),
                 page("Cost",
                         "XP: about " + maxCost + " levels per maxed enchant, charged " + xpWhere + ".\n\n"
-                        + "Lapis blocks: 1 per enchant, minimum."),
+                        + "Lapis blocks: " + lapisLow + "–" + lapisHigh + " per option (unlocks that level; "
+                        + "see /cench table)."),
                 page("Protecting books",
-                        "Without lapis blocks, each applied enchant has a " + eatPct + "% chance to eat its book.\n\n"
-                        + "Add extra lapis blocks — " + fullProt + " blocks (a full stack) = 100% protection, and "
-                        + "all are consumed. Lapis blocks matter!"),
+                        "Without spare lapis, each applied enchant has a " + eatPct + "% chance to eat its book.\n\n"
+                        + "Each lapis block beyond an option's cost adds " + perBlockStr + "% protection, up to 100% "
+                        + "(~" + blocksForFull + " extra blocks). Those blocks are consumed too."),
                 page("Commands",
                         "/cench — shelf summary\n\n/cench preview — what applies to your held item\n\n"
                         + "/cench table — what the shelves apply\n\n/cench find <enchant> — trace it"),
