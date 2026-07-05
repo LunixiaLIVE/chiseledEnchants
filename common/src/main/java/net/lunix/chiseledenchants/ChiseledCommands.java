@@ -140,7 +140,6 @@ public final class ChiseledCommands {
         ServerLevel level = player.level();
         ModConfig cfg = ModConfig.get();
         int chanceDenom = ChiseledEnchanting.chanceDenom(cfg);
-        int levelDenom = ChiseledEnchanting.levelDenom(cfg);
         Map<Holder<Enchantment>, List<ChiseledEnchanting.Book>> byEnchant = ChiseledEnchanting.scan(level, tablePos);
 
         src.sendSuccess(() -> Component.literal("── Chiseled Enchanting ──").withStyle(ChatFormatting.GOLD), false);
@@ -151,13 +150,13 @@ public final class ChiseledCommands {
         }
         int totalBooks = byEnchant.values().stream().mapToInt(List::size).sum();
         src.sendSuccess(() -> Component.literal(byEnchant.size() + " enchant(s), " + totalBooks
-                + " book(s)  ·  " + chanceDenom + " books = 100% land, level averaged over " + levelDenom)
+                + " book(s)  ·  only MAX-level books count; " + chanceDenom + " = 100% land")
                 .withStyle(ChatFormatting.GRAY), false);
 
         List<Map.Entry<Holder<Enchantment>, List<ChiseledEnchanting.Book>>> entries = new ArrayList<>(byEnchant.entrySet());
         entries.sort(Comparator.comparing(e -> e.getKey().getRegisteredName()));
         for (Map.Entry<Holder<Enchantment>, List<ChiseledEnchanting.Book>> e : entries) {
-            src.sendSuccess(() -> line(e.getKey(), e.getValue(), chanceDenom, levelDenom, cfg), false);
+            src.sendSuccess(() -> line(e.getKey(), e.getValue(), chanceDenom, cfg), false);
         }
         return 1;
     }
@@ -173,7 +172,9 @@ public final class ChiseledCommands {
         }
         ItemStack held = player.getMainHandItem();
         ChiseledEnchanting.TablePreview p = ChiseledEnchanting.preview(player.level(), tablePos, held);
-        renderPreview(src, held.getHoverName().getString(), "None of the stocked enchants apply to that item.", p);
+        boolean flagged = ChiseledEnchanting.hasFlaggedBooks(
+                ChiseledEnchanting.scan(player.level(), tablePos), ModConfig.get());
+        renderPreview(src, held.getHoverName().getString(), "None of the stocked enchants apply to that item.", p, flagged);
         return 1;
     }
 
@@ -187,13 +188,15 @@ public final class ChiseledCommands {
             return 0;
         }
         ChiseledEnchanting.TablePreview p = ChiseledEnchanting.previewShelves(player.level(), tablePos);
-        renderPreview(src, "These shelves", "No eligible enchants are stocked in the shelves.", p);
+        boolean flagged = ChiseledEnchanting.hasFlaggedBooks(
+                ChiseledEnchanting.scan(player.level(), tablePos), ModConfig.get());
+        renderPreview(src, "These shelves", "No eligible enchants are stocked in the shelves.", p, flagged);
         return 1;
     }
 
     /** Shared formatter for both preview commands. {@code subject} heads the OK list; {@code noneMsg} covers NONE. */
     private static void renderPreview(CommandSourceStack src, String subject, String noneMsg,
-                                      ChiseledEnchanting.TablePreview p) {
+                                      ChiseledEnchanting.TablePreview p, boolean flagged) {
         src.sendSuccess(() -> Component.literal("── Table Preview ──").withStyle(ChatFormatting.GOLD), false);
         switch (p.kind()) {
             case VANILLA -> {
@@ -223,7 +226,7 @@ public final class ChiseledCommands {
                     "That item can't be enchanted.").withStyle(ChatFormatting.YELLOW), false);
             case NONE_APPLICABLE -> src.sendSuccess(() -> Component.literal(noneMsg).withStyle(ChatFormatting.GRAY), false);
             case OK -> {
-                src.sendSuccess(() -> Component.literal(subject + " — the top slot applies:")
+                src.sendSuccess(() -> Component.literal(subject + " — applies at max level:")
                         .withStyle(ChatFormatting.GRAY), false);
                 for (ChiseledEnchanting.PreviewEnchant pe : p.enchants()) {
                     src.sendSuccess(() -> {
@@ -235,15 +238,19 @@ public final class ChiseledCommands {
                                         .withStyle(pct >= 100 ? ChatFormatting.GREEN : ChatFormatting.AQUA));
                     }, false);
                 }
-                src.sendSuccess(() -> Component.literal("Top-slot cost: " + p.xpLevels() + " XP level"
+                src.sendSuccess(() -> Component.literal("Cost: " + p.xpLevels() + " XP level"
                         + (p.xpLevels() == 1 ? "" : "s") + " + " + p.lapisCost() + " lapis block"
                         + (p.lapisCost() == 1 ? "" : "s"))
                         .withStyle(ChatFormatting.GOLD), false);
-                String note = ModConfig.get().bookProtectionEnabled
-                        ? "Cheaper options cost less lapis + fewer levels; extra lapis blocks buy book protection."
-                        : "Cheaper options cost less lapis + fewer levels.";
-                src.sendSuccess(() -> Component.literal(note).withStyle(ChatFormatting.DARK_GRAY), false);
+                if (ModConfig.get().bookProtectionEnabled) {
+                    src.sendSuccess(() -> Component.literal("Extra lapis blocks beyond the cost buy book protection.")
+                            .withStyle(ChatFormatting.DARK_GRAY), false);
+                }
             }
+        }
+        if (flagged) {
+            src.sendSuccess(() -> Component.literal("⚠ Some stocked books are below max level — they won't count.")
+                    .withStyle(ChatFormatting.YELLOW), false);
         }
     }
 
@@ -302,14 +309,16 @@ public final class ChiseledCommands {
     }
 
     private static Component line(Holder<Enchantment> ench, List<ChiseledEnchanting.Book> books,
-                                  int chanceDenom, int levelDenom, ModConfig cfg) {
+                                  int chanceDenom, ModConfig cfg) {
         int maxLevel = Math.max(1, ench.value().getMaxLevel());
-        int n = books.size();
 
         int[] exact = new int[maxLevel + 1];
+        int maxCount = 0;
         for (ChiseledEnchanting.Book b : books) {
+            if (b.level() >= maxLevel) maxCount++;                       // at (or above) the enchant's max = counts
             if (b.level() >= 1 && b.level() <= maxLevel) exact[b.level()]++;
         }
+        int belowCount = books.size() - maxCount;
         StringBuilder bd = new StringBuilder();
         for (int l = maxLevel; l >= 1; l--) {
             if (exact[l] == 0) continue;
@@ -325,19 +334,22 @@ public final class ChiseledCommands {
             return out.append(Component.literal("  → disabled by config").withStyle(ChatFormatting.DARK_GRAY));
         }
 
-        int chancePct = (int) Math.round(100.0 * Math.min(1.0, (double) n / chanceDenom));
-        int[] levels = books.stream().mapToInt(ChiseledEnchanting.Book::level).boxed()
-                .sorted(Comparator.reverseOrder()).mapToInt(Integer::intValue).toArray();
-        int sumTop = 0;
-        for (int i = 0; i < Math.min(levelDenom, levels.length); i++) sumTop += levels[i];
-        int level = Math.max(1, Math.min(maxLevel, (int) Math.round((double) sumTop / levelDenom)));
-
-        out.append(Component.literal("  → " + chancePct + "% land, " + roman(level))
-                .withStyle(chancePct >= 100 ? ChatFormatting.GREEN : ChatFormatting.AQUA));
-        int excess = Math.max(0, n - Math.max(chanceDenom, levelDenom));
-        if (excess > 0) {
-            out.append(Component.literal("  (⚠ " + excess + " excess book" + (excess == 1 ? "" : "s") + ")")
+        if (maxCount == 0) {                                             // only below-max books → nothing counts
+            out.append(Component.literal("  → 0% (no " + roman(maxLevel) + " books — below-max don't count)")
                     .withStyle(ChatFormatting.YELLOW));
+            return out;
+        }
+
+        int chancePct = (int) Math.round(100.0 * Math.min(1.0, (double) maxCount / chanceDenom));
+        out.append(Component.literal("  → " + chancePct + "% land, " + roman(maxLevel))
+                .withStyle(chancePct >= 100 ? ChatFormatting.GREEN : ChatFormatting.AQUA));
+        if (belowCount > 0) {
+            out.append(Component.literal("  (⚠ " + belowCount + " below-max won't count)")
+                    .withStyle(ChatFormatting.YELLOW));
+        }
+        int excess = Math.max(0, maxCount - chanceDenom);
+        if (excess > 0) {
+            out.append(Component.literal("  (" + excess + " excess)").withStyle(ChatFormatting.DARK_GRAY));
         }
         return out;
     }

@@ -39,11 +39,9 @@ public final class GuideBook {
         // (an admin edits the config, runs /cench reload, and the next book made reads the new numbers).
         ModConfig cfg = ModConfig.get();
         int chanceDenom = ChiseledEnchanting.chanceDenom(cfg);
-        int levelDenom = ChiseledEnchanting.levelDenom(cfg);
-        int guarantee = Math.max(chanceDenom, levelDenom);
+        int guarantee = chanceDenom;
         int maxCost = cfg.costOfMaxEnchant;
-        int lapisLow = Math.max(0, cfg.lapisLow);
-        int lapisHigh = Math.max(0, cfg.lapisHigh);
+        int lapis = ChiseledEnchanting.lapisCost(cfg);
         double perBlock = Math.max(0.0, cfg.protectionPerBlock);
         String perBlockStr = perBlock == Math.floor(perBlock) ? Integer.toString((int) perBlock) : Double.toString(perBlock);
         double maxProtPct = Math.max(0.0, Math.min(100.0, cfg.maxProtectionPercent));
@@ -79,25 +77,30 @@ public final class GuideBook {
                 page("The shelves",
                         "Ring the table with chiseled bookshelves (usual spots, 1-block gap).\n\nStock them with "
                         + "single-enchant books."),
+                page("Max books only",
+                        "ONLY max-level books count (Sharpness V, Mending I, Unbreaking III).\n\nBelow-max books "
+                        + "are flagged and ignored."),
                 page("Guarantees",
-                        "Per enchant:\n\nChance to land = books / " + chanceDenom + "\n\nLevel = books averaged "
-                        + "over " + levelDenom + " (blank slots = 0)."),
+                        "Per enchant:\n\nChance to land = max books / " + chanceDenom + "\n\nEvery landed enchant "
+                        + "comes at its max level."),
                 page("Max it out",
-                        guarantee + " max-level books of one enchant = that enchant at max, guaranteed.\n\n"
-                        + conflictNote),
-                page("The 3 options",
-                        "Three tiers. Top = highest levels; the two below = reduced.\n\nEach tier costs its own "
-                        + "lapis (" + lapisLow + "-" + lapisHigh + " blocks)."),
+                        guarantee + " max-level books of one enchant = it at max, guaranteed.\n\n" + conflictNote),
+                page("The option",
+                        "One option, always the enchant's MAX level.\n\nUnlocks for " + lapis + " lapis BLOCKS "
+                        + "(not gems) in the slot."),
                 page("Cost",
-                        "XP: about " + maxCost + " levels per maxed enchant (per enchant that lands).\n\nLapis "
-                        + "BLOCKS, not gems: " + lapisLow + "-" + lapisHigh + " per option."),
+                        "XP: about " + maxCost + " levels per maxed enchant that lands.\n\nLapis: " + lapis
+                        + " blocks flat to enchant."),
                 page("Protecting books", protectPage),
                 page("Commands",
                         "/cench — shelf summary\n\n/cench preview — held-item preview\n\n/cench table — shelf "
                         + "preview"),
                 page("More commands",
                         "/cench find <enchant> — trace the shelves that hold it\n\n/cench about — mod info + links"),
-                page("If it's blank", blankReasons)
+                page("If it's blank", blankReasons),
+                page("Status bar",
+                        "The bar above the table:\n\nGREEN = ready.\n\nRED = a problem (mixed shelves, a tie, or "
+                        + "below-max books).")
         );
         ItemStack book = new ItemStack(Items.WRITTEN_BOOK);
         book.set(DataComponents.WRITTEN_BOOK_CONTENT,

@@ -8,8 +8,10 @@ import net.minecraft.network.chat.TextColor;
 import net.minecraft.core.NonNullList;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.tags.EnchantmentTags;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.BossEvent;
 import net.minecraft.world.Container;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.ContainerLevelAccess;
@@ -40,6 +42,9 @@ public final class ChiseledEnchanting {
 
     private ChiseledEnchanting() {}
 
+    /** The one enabled enchant option: the top (max-level) slot. The two cheaper slots are disabled. */
+    public static final int TOP_SLOT = 2;
+
     record Book(BlockPos pos, ChiseledBookShelfBlockEntity be, int slot, int level) {}
     private record Guarantee(Holder<Enchantment> enchant, double landChance, int level, List<Book> books) {}
 
@@ -64,6 +69,7 @@ public final class ChiseledEnchanting {
         access.execute((level, tablePos) -> {
             if (level.isClientSide() || !isModdedTable(level, tablePos)) return;   // vanilla table
             result[0] = Boolean.FALSE;                                            // modded table → vanilla suppressed
+            if (slotId != TOP_SLOT) return;                                       // only the top option is enabled
             if (hasMixedShelves(level, tablePos)) return;                         // blank/error — no enchant
             ItemStack item = enchantSlots.getItem(0);
             if (item.isEmpty()) return;
@@ -75,11 +81,11 @@ public final class ChiseledEnchanting {
             Map<Holder<Enchantment>, List<Book>> byEnchant = scan(level, tablePos);
             if (cfg.resolveConflicts ? tieConflict(byEnchant, item, isBook, cfg)
                     : hasConflict(byEnchant, item, isBook, cfg)) return;   // conflicting library — table is blank
-            List<Landed> landed = resolve(byEnchant, item, isBook, slotId, seed, cfg);   // same seed as the displayed slot
+            List<Landed> landed = resolve(byEnchant, item, isBook, seed, cfg);   // same seed as the displayed slot
             if (landed.isEmpty()) return;
 
             int xpLevels = xpCost(landed, cfg);                         // §5/§6 — XP is per landed enchant
-            int lapisRequired = slotLapis(slotId, cfg);                 // §6 — a fixed per-OPTION cost unlocks this level
+            int lapisRequired = lapisCost(cfg);                         // §6 — the flat lapis cost that unlocks the option
             ItemStack lapis = enchantSlots.getItem(1);
             int lapisAvail = lapis.is(Items.LAPIS_BLOCK) ? lapis.getCount() : 0;   // the table requires lapis BLOCKS (gems don't count)
             boolean creative = player.hasInfiniteMaterials();
@@ -154,15 +160,15 @@ public final class ChiseledEnchanting {
     }
 
     /**
-     * slotsChanged override for MODDED tables: make the 3 slots clickable when the setup is valid, or
-     * blank them (cost 0 → empty, unusable) on an error — mixed shelves, conflicting library, book when
-     * disabled, or nothing landable. Vanilla tables are left with vanilla's own values.
-     * (Placeholder cost {@code i+1} for now; the real per-slot XP cost is charged at click.)
+     * slotsChanged override for MODDED tables: only the TOP option is enabled — it's clickable when the setup
+     * is valid and the required lapis is present, else blank (cost 0). The two cheaper slots are always blank
+     * (the mod grants max-level enchants only, so there are no reduced tiers). Vanilla tables are untouched.
      */
     public static void moddedSlots(Container enchantSlots, ContainerLevelAccess access, long seed,
                                    int[] costs, int[] enchantClue, int[] levelClue) {
         access.execute((level, tablePos) -> {
             if (level.isClientSide() || !isModdedTable(level, tablePos)) return;
+            for (int i = 0; i < 3; i++) { costs[i] = 0; enchantClue[i] = -1; levelClue[i] = -1; }   // all blank by default
             ItemStack item = enchantSlots.getItem(0);
             ModConfig cfg = ModConfig.get();
             boolean isBook = item.is(Items.BOOK) || item.is(Items.ENCHANTED_BOOK);
@@ -172,49 +178,40 @@ public final class ChiseledEnchanting {
                     || hasMixedShelves(level, tablePos)
                     || (cfg.resolveConflicts ? tieConflict(byEnchant, item, isBook, cfg)
                             : hasConflict(byEnchant, item, isBook, cfg));
+            if (err) return;
             ItemStack lapis = enchantSlots.getItem(1);
-            int lapisAvail = lapis.is(Items.LAPIS_BLOCK) ? lapis.getCount() : 0;   // an option only unlocks once its lapis is in
-            for (int i = 0; i < 3; i++) {
-                // same seed as the click, so the previewed cost/level is exactly what gets applied/charged
-                List<Landed> preview = err ? List.of() : resolve(byEnchant, item, isBook, i, seed, cfg);
-                if (preview.isEmpty() || lapisAvail < slotLapis(i, cfg)) {   // no enchants, or not enough lapis blocks yet
-                    costs[i] = 0;
-                    enchantClue[i] = -1;
-                    levelClue[i] = -1;
-                } else {
-                    costs[i] = Math.max(1, xpCost(preview, cfg));   // real XP cost == what's charged
-                    // A vanilla client shows only ONE enchant per slot, so spread the set across the 3 slots:
-                    // the top slot (id 2) names the strongest enchant and each lower slot reveals another, so a
-                    // glance across all three previews up to 3 of the enchants that will ALL be applied on click
-                    // (the full list is always available via /cench).
-                    List<Landed> ranked = new ArrayList<>(preview);
-                    ranked.sort(Comparator.comparingInt(Landed::level).reversed());
-                    Landed pick = ranked.get((2 - i) % ranked.size());
-                    enchantClue[i] = level.registryAccess().lookupOrThrow(Registries.ENCHANTMENT).getId(pick.ench().value());
-                    levelClue[i] = pick.level();
-                }
-            }
+            int lapisAvail = lapis.is(Items.LAPIS_BLOCK) ? lapis.getCount() : 0;   // the option unlocks once its lapis is in
+            if (lapisAvail < lapisCost(cfg)) return;
+            List<Landed> preview = resolve(byEnchant, item, isBook, seed, cfg);    // same seed as the click
+            if (preview.isEmpty()) return;
+            costs[TOP_SLOT] = Math.max(1, xpCost(preview, cfg));                   // real XP cost == what's charged
+            // A vanilla client shows only ONE enchant per slot, so surface the strongest as the clue for the
+            // enabled slot; the full set that will ALL be applied on click is available via /cench.
+            List<Landed> ranked = new ArrayList<>(preview);
+            ranked.sort(Comparator.comparingInt(Landed::level).reversed());
+            Landed pick = ranked.get(0);
+            enchantClue[TOP_SLOT] = level.registryAccess().lookupOrThrow(Registries.ENCHANTMENT).getId(pick.ench().value());
+            levelClue[TOP_SLOT] = pick.level();
         });
     }
 
-    /** Resolve which enchants land + at what level for the chosen slot tier (no cost/consumption here). */
+    /**
+     * Resolve which enchants land (no cost/consumption here). Only the enchant's MAX-level books count — this
+     * is what blocks book laundering (you can't average low books up into a level you never earned), so every
+     * landed enchant is granted at its max. Conflicts are resolved by max-book count before the land roll.
+     */
     private static List<Landed> resolve(Map<Holder<Enchantment>, List<Book>> byEnchant, ItemStack item,
-                                        boolean isBook, int slotId, long seed, ModConfig cfg) {
-        RandomSource rng = RandomSource.create(seed + slotId);   // deterministic per slot → displayed cost == charged
+                                        boolean isBook, long seed, ModConfig cfg) {
+        RandomSource rng = RandomSource.create(seed);   // shared seed → displayed cost == charged
         int chanceDenom = chanceDenom(cfg);
-        int levelDenom = levelDenom(cfg);
         List<Guarantee> guarantees = new ArrayList<>();
         for (Map.Entry<Holder<Enchantment>, List<Book>> e : byEnchant.entrySet()) {
             if (!eligible(e.getKey(), cfg)) continue;                        // §5 curse/treasure gating
-            List<Book> bks = e.getValue();
-            double landChance = Math.min(1.0, (double) bks.size() / chanceDenom);
-            int[] levels = bks.stream().mapToInt(Book::level).boxed()
-                    .sorted(Comparator.reverseOrder()).mapToInt(Integer::intValue).toArray();
-            int sumTop = 0;
-            for (int i = 0; i < Math.min(levelDenom, levels.length); i++) sumTop += levels[i];
-            int maxLevel = Math.max(1, e.getKey().value().getMaxLevel());
-            int avgLevel = Math.max(1, Math.min(maxLevel, (int) Math.round((double) sumTop / levelDenom)));
-            guarantees.add(new Guarantee(e.getKey(), landChance, avgLevel, bks));
+            List<Book> max = maxBooks(e.getKey(), e.getValue());            // only max-level books count
+            if (max.isEmpty()) continue;                                    // below-max books are flagged, never used
+            double landChance = Math.min(1.0, (double) max.size() / chanceDenom);
+            int level = Math.max(1, e.getKey().value().getMaxLevel());
+            guarantees.add(new Guarantee(e.getKey(), landChance, level, max));
         }
         // Order for conflict resolution: MOST books first, ties broken alphabetically by id (deterministic).
         guarantees.sort(Comparator.comparingInt((Guarantee g) -> g.books().size()).reversed()
@@ -238,23 +235,51 @@ public final class ChiseledEnchanting {
             kept.add(g);
         }
 
-        // Land roll + per-slot tier cap on the survivors.
+        // Land roll on the survivors — each lands at its MAX level (no per-slot cap: there's only one tier).
         List<Landed> landed = new ArrayList<>();
         for (Guarantee g : kept) {
             if (rng.nextFloat() >= g.landChance()) continue;                  // didn't land
-            int cap = slotCap(slotId, Math.max(1, g.enchant().value().getMaxLevel()), rng, cfg);
-            if (cap <= 0) continue;
-            landed.add(new Landed(g.enchant(), Math.min(g.level(), cap), g.books()));
+            landed.add(new Landed(g.enchant(), g.level(), g.books()));
         }
         return landed;
+    }
+
+    /** Only the enchant's MAX-level books count toward a guarantee — below-max books are flagged, never used. */
+    private static List<Book> maxBooks(Holder<Enchantment> ench, List<Book> all) {
+        int max = Math.max(1, ench.value().getMaxLevel());
+        List<Book> out = new ArrayList<>();
+        for (Book b : all) if (b.level() >= max) out.add(b);
+        return out;
+    }
+
+    /** True if any ELIGIBLE stocked enchant has a below-max book — flagged (status bar goes red), never counted. */
+    public static boolean hasFlaggedBooks(Map<Holder<Enchantment>, List<Book>> byEnchant, ModConfig cfg) {
+        for (Map.Entry<Holder<Enchantment>, List<Book>> e : byEnchant.entrySet()) {
+            if (!eligible(e.getKey(), cfg)) continue;
+            int max = Math.max(1, e.getKey().value().getMaxLevel());
+            for (Book b : e.getValue()) if (b.level() < max) return true;
+        }
+        return false;
     }
 
     /** Any two eligible, item-applicable stocked enchants that conflict → blank the table (§7). */
     public static boolean hasConflict(Map<Holder<Enchantment>, List<Book>> byEnchant, ItemStack item, boolean isBook, ModConfig cfg) {
         if (isBook && cfg.allowConflictingOnBook) return false;
         List<Holder<Enchantment>> elig = new ArrayList<>();
-        for (Holder<Enchantment> e : byEnchant.keySet())
-            if (eligible(e, cfg) && (isBook || e.value().canEnchant(item))) elig.add(e);
+        for (Map.Entry<Holder<Enchantment>, List<Book>> e : byEnchant.entrySet())
+            if (eligible(e.getKey(), cfg) && !maxBooks(e.getKey(), e.getValue()).isEmpty()
+                    && (isBook || e.getKey().value().canEnchant(item))) elig.add(e.getKey());   // only counting enchants
+        for (int i = 0; i < elig.size(); i++)
+            for (int j = i + 1; j < elig.size(); j++)
+                if (!Enchantment.areCompatible(elig.get(i), elig.get(j))) return true;
+        return false;
+    }
+
+    /** Item-agnostic conflict among the shelves' COUNTING (max-book) enchants — for /cench table + the status bar. */
+    private static boolean anyConflictShelves(Map<Holder<Enchantment>, List<Book>> byEnchant, ModConfig cfg) {
+        List<Holder<Enchantment>> elig = new ArrayList<>();
+        for (Map.Entry<Holder<Enchantment>, List<Book>> e : byEnchant.entrySet())
+            if (eligible(e.getKey(), cfg) && !maxBooks(e.getKey(), e.getValue()).isEmpty()) elig.add(e.getKey());
         for (int i = 0; i < elig.size(); i++)
             for (int j = i + 1; j < elig.size(); j++)
                 if (!Enchantment.areCompatible(elig.get(i), elig.get(j))) return true;
@@ -268,20 +293,22 @@ public final class ChiseledEnchanting {
      */
     public static boolean tieConflict(Map<Holder<Enchantment>, List<Book>> byEnchant, ItemStack item, boolean isBook, ModConfig cfg) {
         if (isBook && cfg.allowConflictingOnBook) return false;
-        List<Map.Entry<Holder<Enchantment>, List<Book>>> contenders = new ArrayList<>();
+        List<Map.Entry<Holder<Enchantment>, Integer>> contenders = new ArrayList<>();
         for (Map.Entry<Holder<Enchantment>, List<Book>> e : byEnchant.entrySet()) {
+            int count = maxBooks(e.getKey(), e.getValue()).size();   // only max-level books count toward the tie
+            if (count == 0) continue;
             boolean applicable = isBook || item == null || e.getKey().value().canEnchant(item);
-            if (eligible(e.getKey(), cfg) && applicable) contenders.add(e);
+            if (eligible(e.getKey(), cfg) && applicable) contenders.add(Map.entry(e.getKey(), count));
         }
         contenders.sort(Comparator.comparingInt(
-                (Map.Entry<Holder<Enchantment>, List<Book>> e) -> e.getValue().size()).reversed());
-        List<Map.Entry<Holder<Enchantment>, List<Book>>> kept = new ArrayList<>();
-        for (Map.Entry<Holder<Enchantment>, List<Book>> g : contenders) {
+                (Map.Entry<Holder<Enchantment>, Integer> e) -> e.getValue()).reversed());
+        List<Map.Entry<Holder<Enchantment>, Integer>> kept = new ArrayList<>();
+        for (Map.Entry<Holder<Enchantment>, Integer> g : contenders) {
             boolean dropped = false;
-            for (Map.Entry<Holder<Enchantment>, List<Book>> k : kept) {
+            for (Map.Entry<Holder<Enchantment>, Integer> k : kept) {
                 if (!Enchantment.areCompatible(k.getKey(), g.getKey())) {
-                    if (k.getValue().size() == g.getValue().size()) return true;   // equal books + conflict = ambiguous
-                    dropped = true;                                                // g loses to a higher-count enchant
+                    if (k.getValue().intValue() == g.getValue().intValue()) return true;   // equal books + conflict = ambiguous
+                    dropped = true;                                                        // g loses to a higher-count enchant
                     break;
                 }
             }
@@ -293,9 +320,9 @@ public final class ChiseledEnchanting {
     /**
      * Item-specific readout of what this table will do to {@code item} (for the /cench preview command —
      * players get the info from chat instead of the one-enchant-per-slot vanilla tooltip). Deterministic:
-     * reports every eligible, item-applicable stocked enchant at its TOP-slot level + land chance, plus the
-     * top-slot XP/lapis cost. The two cheaper slots apply reduced levels per slotTiers. Mirrors the exact
-     * gating of {@link #moddedEnchant}/{@link #moddedSlots}, so an error here is the same blank you'd see.
+     * reports every eligible, item-applicable COUNTING (max-book) enchant at its max level + land chance, plus
+     * the XP/lapis cost. Mirrors the exact gating of {@link #moddedEnchant}/{@link #moddedSlots}, so an error
+     * here is the same blank you'd see (below-max books are excluded — they're flagged, not applied).
      */
     public static TablePreview preview(Level level, BlockPos tablePos, ItemStack item) {
         if (!isModdedTable(level, tablePos)) return new TablePreview(TablePreview.Kind.VANILLA, List.of(), 0, 0);
@@ -310,27 +337,23 @@ public final class ChiseledEnchanting {
                 : hasConflict(byEnchant, item, isBook, cfg))
             return new TablePreview(TablePreview.Kind.CONFLICT, List.of(), 0, 0);
 
-        int chanceDenom = chanceDenom(cfg), levelDenom = levelDenom(cfg);
+        int chanceDenom = chanceDenom(cfg);
         List<PreviewEnchant> lines = new ArrayList<>();
         List<Landed> forCost = new ArrayList<>();
         for (Map.Entry<Holder<Enchantment>, List<Book>> e : byEnchant.entrySet()) {
             Holder<Enchantment> ench = e.getKey();
             if (!eligible(ench, cfg)) continue;
             if (!isBook && !ench.value().canEnchant(item)) continue;      // silently skip incompatible
-            List<Book> bks = e.getValue();
-            double chance = Math.min(1.0, (double) bks.size() / chanceDenom);
-            int[] levels = bks.stream().mapToInt(Book::level).boxed()
-                    .sorted(Comparator.reverseOrder()).mapToInt(Integer::intValue).toArray();
-            int sumTop = 0;
-            for (int i = 0; i < Math.min(levelDenom, levels.length); i++) sumTop += levels[i];
-            int maxLevel = Math.max(1, ench.value().getMaxLevel());
-            int topLevel = Math.max(1, Math.min(maxLevel, (int) Math.round((double) sumTop / levelDenom)));
-            lines.add(new PreviewEnchant(ench, topLevel, chance));
-            forCost.add(new Landed(ench, topLevel, bks));
+            List<Book> max = maxBooks(ench, e.getValue());               // only max-level books count
+            if (max.isEmpty()) continue;                                 // below-max only → flagged, doesn't apply
+            double chance = Math.min(1.0, (double) max.size() / chanceDenom);
+            int lvl = Math.max(1, ench.value().getMaxLevel());
+            lines.add(new PreviewEnchant(ench, lvl, chance));
+            forCost.add(new Landed(ench, lvl, max));
         }
         if (lines.isEmpty()) return new TablePreview(TablePreview.Kind.NONE_APPLICABLE, List.of(), 0, 0);
         lines.sort(Comparator.comparingDouble(PreviewEnchant::landChance).reversed());
-        return new TablePreview(TablePreview.Kind.OK, lines, xpCost(forCost, cfg), Math.max(0, cfg.lapisHigh));
+        return new TablePreview(TablePreview.Kind.OK, lines, xpCost(forCost, cfg), lapisCost(cfg));
     }
 
     /**
@@ -345,38 +368,26 @@ public final class ChiseledEnchanting {
         Map<Holder<Enchantment>, List<Book>> byEnchant = scan(level, tablePos);
 
         // Item-agnostic conflict: resolveConflicts on → only an equal-book tie blanks; off → any conflict blanks.
-        if (cfg.resolveConflicts) {
-            if (tieConflict(byEnchant, null, false, cfg))
-                return new TablePreview(TablePreview.Kind.CONFLICT, List.of(), 0, 0);
-        } else {
-            List<Holder<Enchantment>> elig = new ArrayList<>();
-            for (Holder<Enchantment> e : byEnchant.keySet()) if (eligible(e, cfg)) elig.add(e);
-            for (int i = 0; i < elig.size(); i++)
-                for (int j = i + 1; j < elig.size(); j++)
-                    if (!Enchantment.areCompatible(elig.get(i), elig.get(j)))
-                        return new TablePreview(TablePreview.Kind.CONFLICT, List.of(), 0, 0);
-        }
+        boolean conflict = cfg.resolveConflicts ? tieConflict(byEnchant, null, false, cfg)
+                : anyConflictShelves(byEnchant, cfg);
+        if (conflict) return new TablePreview(TablePreview.Kind.CONFLICT, List.of(), 0, 0);
 
-        int chanceDenom = chanceDenom(cfg), levelDenom = levelDenom(cfg);
+        int chanceDenom = chanceDenom(cfg);
         List<PreviewEnchant> lines = new ArrayList<>();
         List<Landed> forCost = new ArrayList<>();
         for (Map.Entry<Holder<Enchantment>, List<Book>> e : byEnchant.entrySet()) {
             Holder<Enchantment> ench = e.getKey();
             if (!eligible(ench, cfg)) continue;
-            List<Book> bks = e.getValue();
-            double chance = Math.min(1.0, (double) bks.size() / chanceDenom);
-            int[] levels = bks.stream().mapToInt(Book::level).boxed()
-                    .sorted(Comparator.reverseOrder()).mapToInt(Integer::intValue).toArray();
-            int sumTop = 0;
-            for (int i = 0; i < Math.min(levelDenom, levels.length); i++) sumTop += levels[i];
-            int maxLevel = Math.max(1, ench.value().getMaxLevel());
-            int topLevel = Math.max(1, Math.min(maxLevel, (int) Math.round((double) sumTop / levelDenom)));
-            lines.add(new PreviewEnchant(ench, topLevel, chance));
-            forCost.add(new Landed(ench, topLevel, bks));
+            List<Book> max = maxBooks(ench, e.getValue());              // only max-level books count
+            if (max.isEmpty()) continue;                                // below-max only → flagged, doesn't apply
+            double chance = Math.min(1.0, (double) max.size() / chanceDenom);
+            int lvl = Math.max(1, ench.value().getMaxLevel());
+            lines.add(new PreviewEnchant(ench, lvl, chance));
+            forCost.add(new Landed(ench, lvl, max));
         }
         if (lines.isEmpty()) return new TablePreview(TablePreview.Kind.NONE_APPLICABLE, List.of(), 0, 0);
         lines.sort(Comparator.comparingDouble(PreviewEnchant::landChance).reversed());
-        return new TablePreview(TablePreview.Kind.OK, lines, xpCost(forCost, cfg), Math.max(0, cfg.lapisHigh));
+        return new TablePreview(TablePreview.Kind.OK, lines, xpCost(forCost, cfg), lapisCost(cfg));
     }
 
     /** Total XP levels the modded enchant costs = Σ ceil(costOfMaxEnchant × level / maxLevel), no cap. */
@@ -397,14 +408,9 @@ public final class ChiseledEnchanting {
         return (int) (4.5 * level * level - 162.5 * level + 2220.0);
     }
 
-    /** Lapis blocks required to use an option: slot 0 = low, 1 = mid, 2 (top) = high. */
-    public static int slotLapis(int slotId, ModConfig cfg) {
-        int v = switch (slotId) {
-            case 0 -> cfg.lapisLow;
-            case 1 -> cfg.lapisMid;
-            default -> cfg.lapisHigh;
-        };
-        return Math.max(0, v);
+    /** Flat lapis blocks required to use the table's single option; blocks beyond it buy book protection. */
+    public static int lapisCost(ModConfig cfg) {
+        return Math.max(0, cfg.lapisCost);
     }
 
     /**
@@ -503,33 +509,38 @@ public final class ChiseledEnchanting {
         return Math.max(1, cfg.booksForFullChance);
     }
 
-    /** Denominator for the level average — slots the guaranteed level is averaged over. */
-    public static int levelDenom(ModConfig cfg) {
-        return Math.max(1, cfg.slotsForLevelAverage);
-    }
-
     /**
-     * Per-slot level ceiling. Top slot (id 2) allows up to the enchant's max; the two cheaper slots
-     * roll a random cap from the config tier for this enchant's max level (unlisted maxes extrapolate
-     * the max-5 shape). Returns 0 = no guarantee on this slot for this enchant.
+     * Refresh the open table's status boss bar (called on open + whenever the slots change): RED with a reason
+     * when the setup has a problem — mixed shelves, a conflict/tie, or a flagged below-max book — and GREEN
+     * ("ready") otherwise. Item-agnostic: it reflects the SHELF setup, not whatever item is in the slot.
      */
-    private static int slotCap(int slotId, int maxLevel, RandomSource rng, ModConfig cfg) {
-        if (slotId >= 2) return maxLevel;
-        int[] range;
-        ModConfig.SlotTier tier = cfg.slotTiers == null ? null : cfg.slotTiers.get(String.valueOf(maxLevel));
-        if (tier != null) {
-            range = (slotId == 1) ? tier.mid : tier.low;
-        } else {                                                 // modded max not in the table → extrapolate max-5 shape
-            range = (slotId == 1)
-                    ? new int[]{Math.round(0.6f * maxLevel), Math.round(0.8f * maxLevel)}
-                    : new int[]{Math.round(0.2f * maxLevel), Math.round(0.4f * maxLevel)};
-        }
-        if (range == null || range.length < 2) return 0;
-        int hi = Math.max(range[0], range[1]);
-        if (hi <= 0) return 0;                                   // "none" on this slot
-        int lo = Math.max(1, Math.min(range[0], range[1]));
-        if (lo > hi) return 0;
-        return lo + rng.nextInt(hi - lo + 1);                    // random-inclusive [lo, hi]
+    public static void updateNotice(ServerPlayer player, Container enchantSlots, ContainerLevelAccess access) {
+        access.execute((level, tablePos) -> {
+            if (level.isClientSide() || !isModdedTable(level, tablePos)) return;
+            ModConfig cfg = ModConfig.get();
+            Map<Holder<Enchantment>, List<Book>> byEnchant = scan(level, tablePos);
+            String problem = null;
+            if (hasMixedShelves(level, tablePos)) {
+                problem = "Mixed shelves — remove the regular bookshelves";
+            } else if (cfg.resolveConflicts ? tieConflict(byEnchant, null, false, cfg)
+                    : anyConflictShelves(byEnchant, cfg)) {
+                problem = cfg.resolveConflicts
+                        ? "Conflicting enchants tied on books — add a book to break the tie"
+                        : "Conflicting enchants stocked — remove the conflicts";
+            } else if (hasFlaggedBooks(byEnchant, cfg)) {
+                problem = "Some books aren't max-level — they won't count";
+            }
+            if (problem != null) {
+                TableNotice.setBar(player, Component.literal("⚠ " + problem).withStyle(ChatFormatting.RED),
+                        BossEvent.BossBarColor.RED);
+            } else {
+                String base = (cfg.tableOpenNotice == null || cfg.tableOpenNotice.isBlank())
+                        ? (cfg.specialTableName == null ? "Chiseled Enchanter" : cfg.specialTableName)
+                        : cfg.tableOpenNotice.trim();
+                TableNotice.setBar(player, Component.literal(base).withStyle(ChatFormatting.GREEN),
+                        BossEvent.BossBarColor.GREEN);
+            }
+        });
     }
 
     /** §5 eligibility: curses + treasure gating (treasure = not in #minecraft:in_enchanting_table). */

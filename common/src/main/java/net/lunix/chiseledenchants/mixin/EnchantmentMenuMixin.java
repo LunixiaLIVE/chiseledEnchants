@@ -1,11 +1,8 @@
 package net.lunix.chiseledenchants.mixin;
 
 import net.lunix.chiseledenchants.ChiseledEnchanting;
-import net.lunix.chiseledenchants.ModConfig;
 import net.lunix.chiseledenchants.ModdedTableHolder;
 import net.lunix.chiseledenchants.TableNotice;
-import net.minecraft.ChatFormatting;
-import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.Container;
 import net.minecraft.world.entity.player.Inventory;
@@ -17,6 +14,7 @@ import net.minecraft.world.inventory.EnchantmentMenu;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -40,6 +38,9 @@ public abstract class EnchantmentMenuMixin implements ModdedTableHolder {
 
     @Shadow public abstract int getEnchantmentSeed();
 
+    /** Captured at construction (server-side) so slotsChanged can drive this player's status boss bar. */
+    @Unique private ServerPlayer chiseledEnchants$player;
+
     @Inject(method = "clickMenuButton", at = @At("HEAD"), cancellable = true)
     private void chiseledEnchants_takeover(Player player, int id, CallbackInfoReturnable<Boolean> cir) {
         Boolean handled = ChiseledEnchanting.moddedEnchant(enchantSlots, access, id, getEnchantmentSeed(), player);
@@ -57,22 +58,20 @@ public abstract class EnchantmentMenuMixin implements ModdedTableHolder {
     private void chiseledEnchants_slots(Container container, CallbackInfo ci) {
         if (container == enchantSlots) {
             ChiseledEnchanting.moddedSlots(enchantSlots, access, getEnchantmentSeed(), costs, enchantClue, levelClue);
+            if (chiseledEnchants$player != null) {
+                ChiseledEnchanting.updateNotice(chiseledEnchants$player, enchantSlots, access);   // live green ⇄ red status
+            }
         }
     }
 
-    /** Actionbar notice when a player opens the modded table (server-side 3-arg ctor only). */
+    /** Capture the opener and show the status boss bar (server-side 3-arg ctor only). */
     @Inject(method = "<init>(ILnet/minecraft/world/entity/player/Inventory;Lnet/minecraft/world/inventory/ContainerLevelAccess;)V",
             at = @At("RETURN"))
     private void chiseledEnchants_openNotice(int id, Inventory inv, ContainerLevelAccess openAccess, CallbackInfo ci) {
-        ModConfig cfg = ModConfig.get();
-        if (cfg.tableOpenNotice == null || cfg.tableOpenNotice.isBlank()) return;
-        if (!(inv.player instanceof ServerPlayer sp)) return;
-        openAccess.execute((level, pos) -> {
-            if (!level.isClientSide() && ChiseledEnchanting.isModdedTable(level, pos)) {
-                Component text = Component.literal(cfg.tableOpenNotice.trim()).withStyle(ChatFormatting.AQUA);
-                TableNotice.showBoss(sp, text);   // boss bar at the top; stays until they leave the table
-            }
-        });
+        if (inv.player instanceof ServerPlayer sp) {
+            chiseledEnchants$player = sp;
+            ChiseledEnchanting.updateNotice(sp, enchantSlots, access);   // green "ready" / red problem, stays until they leave
+        }
     }
 
     /** Clear the open-notice boss bar when the player closes the table (in case it's still showing). */

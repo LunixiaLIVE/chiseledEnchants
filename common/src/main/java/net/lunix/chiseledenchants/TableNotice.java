@@ -26,11 +26,20 @@ public final class TableNotice {
 
     private static final List<Job> JOBS = new ArrayList<>();
 
-    /** Show a boss-bar notice to the player until they leave the table (replaces any prior one). */
-    public static synchronized void showBoss(ServerPlayer player, Component text) {
-        removeFor(player);
+    /**
+     * Show or update the player's status boss bar (kept until they leave the table). Reuses the existing bar
+     * if present — just re-setting its text/color — so a live status change (green ⇄ red) doesn't flicker.
+     */
+    public static synchronized void setBar(ServerPlayer player, Component text, BossEvent.BossBarColor color) {
+        for (Job j : JOBS) {
+            if (j.player() == player) {
+                j.event().setName(text);
+                j.event().setColor(color);
+                return;
+            }
+        }
         ServerBossEvent event = new ServerBossEvent(
-                UUID.randomUUID(), text, BossEvent.BossBarColor.PURPLE, BossEvent.BossBarOverlay.PROGRESS);
+                UUID.randomUUID(), text, color, BossEvent.BossBarOverlay.PROGRESS);
         event.setProgress(1.0f);
         event.addPlayer(player);
         JOBS.add(new Job(event, player));
