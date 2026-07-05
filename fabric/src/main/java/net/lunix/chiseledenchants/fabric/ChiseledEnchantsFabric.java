@@ -2,10 +2,12 @@ package net.lunix.chiseledenchants.fabric;
 
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
 import net.fabricmc.loader.api.FabricLoader;
 import net.lunix.chiseledenchants.ChiseledCommands;
 import net.lunix.chiseledenchants.ChiseledEnchantsCommon;
+import net.lunix.chiseledenchants.ModConfig;
 import net.lunix.chiseledenchants.ParticleScheduler;
 import net.lunix.chiseledenchants.TableNotice;
 
@@ -20,5 +22,7 @@ public class ChiseledEnchantsFabric implements ModInitializer {
             ParticleScheduler.tick(server);
             TableNotice.tick(server);
         });
+        ServerLifecycleEvents.SERVER_STARTED.register(server ->
+                ModConfig.syncEnchantWhitelist(server.registryAccess()));
     }
 }

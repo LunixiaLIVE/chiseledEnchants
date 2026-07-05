@@ -2,6 +2,11 @@ package net.lunix.chiseledenchants;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import net.minecraft.core.Registry;
+import net.minecraft.core.RegistryAccess;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.Identifier;
+import net.minecraft.world.item.enchantment.Enchantment;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -11,6 +16,7 @@ import java.nio.file.Path;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeMap;
 
 /**
  * Config for chiseledEnchants. See DESIGN.md §8 for the full schema and semantics.
@@ -133,15 +139,13 @@ public class ModConfig {
     // ── Treasure enchants (§5) — guarantee-only; never in the vanilla random roll ──
     /** Master switch: treasure enchants may be guaranteed. Set false for fully-vanilla treasure (off). */
     public boolean allowTreasureEnchants = true;
-    /**
-     * Which treasure enchants may be guaranteed when the switch above is on.
-     * ["*"] = all treasure enchants (default, incl. modded); [] = none;
-     * or list specific ids, e.g. "minecraft:mending", to restrict.
-     */
-    public List<String> treasureEnchantWhitelist = List.of("*");
 
     // ── Curses (§5) ──
     public boolean allowCurses = false;
+
+    // ── Per-enchant whitelist — auto-filled from the live enchant registry on server start (every enchant,
+    //    modded included, defaults to true). Flip an entry to false to bar that enchant from the table. ──
+    public Map<String, Boolean> enchantWhitelist = new TreeMap<>();
 
     // ── Books (§8) ──
     /** Whether the modded table may enchant a BOOK item (off by default — the table is for gear). */
@@ -181,6 +185,16 @@ public class ModConfig {
 
     public static ModConfig get() {
         return instance;
+    }
+
+    /** Add any enchant missing from {@link #enchantWhitelist} as allowed (true), then save if it changed. */
+    public static void syncEnchantWhitelist(RegistryAccess access) {
+        Registry<Enchantment> reg = access.lookupOrThrow(Registries.ENCHANTMENT);
+        boolean changed = false;
+        for (Identifier id : reg.keySet()) {
+            if (instance.enchantWhitelist.putIfAbsent(id.toString(), Boolean.TRUE) == null) changed = true;
+        }
+        if (changed) save();
     }
 
     private static Path configPath() {

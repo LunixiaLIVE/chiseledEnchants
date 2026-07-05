@@ -484,14 +484,9 @@ public final class ChiseledEnchanting {
 
     /** §5 eligibility: curses + treasure gating (treasure = not in #minecraft:in_enchanting_table). */
     public static boolean eligible(Holder<Enchantment> ench, ModConfig cfg) {
-        if (ench.is(EnchantmentTags.CURSE) && !cfg.allowCurses) return false;
-        boolean treasure = !ench.is(EnchantmentTags.IN_ENCHANTING_TABLE);
-        if (treasure) {
-            if (!cfg.allowTreasureEnchants) return false;
-            String id = ench.getRegisteredName();   // "namespace:path", e.g. "minecraft:mending"
-            if (!(cfg.treasureEnchantWhitelist.contains("*")
-                    || cfg.treasureEnchantWhitelist.contains(id))) return false;
-        }
-        return true;
+        if (ench.is(EnchantmentTags.CURSE) && !cfg.allowCurses) return false;                    // curse master switch
+        if (!ench.is(EnchantmentTags.IN_ENCHANTING_TABLE) && !cfg.allowTreasureEnchants) return false; // treasure master switch
+        String id = ench.getRegisteredName();               // "namespace:path", e.g. "minecraft:mending"
+        return cfg.enchantWhitelist.getOrDefault(id, true);  // per-enchant toggle (absent = allowed)
     }
 }
