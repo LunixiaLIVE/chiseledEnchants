@@ -48,54 +48,50 @@ public final class GuideBook {
         String perBlockStr = perBlock == Math.floor(perBlock) ? Integer.toString((int) perBlock) : Double.toString(perBlock);
         double maxProtPct = Math.max(0.0, Math.min(100.0, cfg.maxProtectionPercent));
         String maxProtStr = maxProtPct == Math.floor(maxProtPct) ? Integer.toString((int) maxProtPct) : Double.toString(maxProtPct);
-        int blocksForCap = perBlock > 0 ? (int) Math.ceil(maxProtPct / perBlock) : 0;
         int eatPct = (int) Math.round(Math.max(0.0, Math.min(1.0, cfg.bookConsumeChance)) * 100);
-        String xpWhere = cfg.xpFromFirstLevels ? "from your first levels" : "off the top of your levels";
-        boolean requireTable = cfg.requireSpecialTable;
         String tableName = (cfg.specialTableName == null || cfg.specialTableName.isBlank())
-                ? "Arcane Enchanter" : cfg.specialTableName.trim();
-        String acquire = cfg.craftOnlyTable
-                ? "Craft the \"" + tableName + "\" (dragon head + netherite + obsidian). "
-                : "Craft the \"" + tableName + "\", or anvil-rename an enchanting table to \"" + tableName + "\". ";
-        String setup = requireTable
-                ? acquire + "Place chiseled bookshelves around it (usual enchanting spots, 1-block air gap) and "
-                  + "fill them with single-enchant books.\n\nMixing in regular shelves blanks the options."
-                : "Place chiseled bookshelves around an enchanting table (usual spots, 1-block air gap) and fill "
-                  + "them with single-enchant books.\n\nMixing in regular shelves blanks the options.";
+                ? "Chiseled Enchanter" : cfg.specialTableName.trim();
+
+        // Every page is kept short so nothing overflows a written-book page (~14 lines each).
+        String tablePage = !cfg.requireSpecialTable
+                ? "Any enchanting table works — no special table needed."
+                : cfg.craftOnlyTable
+                    ? "Craft the \"" + tableName + "\" (it's in your recipe book)."
+                    : "Craft the \"" + tableName + "\", or rename any enchanting table to it in an anvil.";
         String protectPage = cfg.bookProtectionEnabled
-                ? "Without spare lapis, each applied enchant has a " + eatPct + "% chance to eat its book.\n\n"
-                  + "Each lapis block beyond an option's cost adds " + perBlockStr + "% protection, up to "
-                  + maxProtStr + "% (~" + blocksForCap + " extra blocks). Those blocks are consumed too."
-                : "Each applied enchant has a " + eatPct + "% chance to eat its book.\n\nBook protection is off "
-                  + "here — extra lapis does nothing; the table only takes each option's required blocks.";
+                ? "Each enchant applied has a " + eatPct + "% chance to eat its book.\n\nSpend spare lapis (+"
+                  + perBlockStr + "% each) to protect them, up to " + maxProtStr + "%."
+                : "Each enchant applied has a " + eatPct + "% chance to eat its book.\n\nProtection is off — extra "
+                  + "lapis does nothing.";
 
         List<Filterable<Component>> pages = List.of(
                 page("chiseledEnchants",
-                        "Targeted enchanting — no random rolls.\n\nStock chiseled bookshelves around the table "
-                        + "with single-enchant books to guarantee exactly the enchants you want, paid in XP and "
-                        + "lapis BLOCKS."),
-                page("Setup", setup),
+                        "Targeted enchanting — you choose the enchants, no random rolls."),
+                page("The table", tablePage),
+                page("The shelves",
+                        "Ring the table with chiseled bookshelves (usual spots, 1-block gap).\n\nStock them with "
+                        + "single-enchant books."),
                 page("Guarantees",
-                        "Per enchant:\n\n• Chance to land = books ÷ " + chanceDenom + "\n\n• Level = the books "
-                        + "averaged over " + levelDenom + " slots (empty slots count as 0)\n\n" + guarantee
-                        + " max-level books of one enchant = that enchant at max, every time."),
+                        "Per enchant:\n\nChance to land = books / " + chanceDenom + "\n\nLevel = books averaged "
+                        + "over " + levelDenom + " (blank slots = 0)."),
+                page("Max it out",
+                        guarantee + " max-level books of one enchant = that enchant at max, guaranteed.\n\nRegular "
+                        + "shelves mixed in blank the options."),
                 page("The 3 options",
-                        "Three power tiers. The top applies the highest levels; the two below apply reduced "
-                        + "levels. Each tier has its own lapis cost (" + lapisLow + "–" + lapisHigh + " blocks) "
-                        + "that unlocks it.\n\nAll stocked, compatible enchants apply together — you pay XP per "
-                        + "enchant that lands."),
+                        "Three tiers. Top = highest levels; the two below = reduced.\n\nEach tier costs its own "
+                        + "lapis (" + lapisLow + "-" + lapisHigh + " blocks)."),
                 page("Cost",
-                        "XP: about " + maxCost + " levels per maxed enchant, charged " + xpWhere + " (per enchant "
-                        + "that lands).\n\nLapis BLOCKS, not gems: " + lapisLow + "–" + lapisHigh + " per option. "
-                        + "See /cench table for the exact cost."),
+                        "XP: about " + maxCost + " levels per maxed enchant (per enchant that lands).\n\nLapis "
+                        + "BLOCKS, not gems: " + lapisLow + "-" + lapisHigh + " per option."),
                 page("Protecting books", protectPage),
                 page("Commands",
-                        "/cench — shelf summary\n\n/cench preview — what applies to your held item\n\n"
-                        + "/cench table — what the shelves apply\n\n/cench find <enchant> — trace it"),
+                        "/cench — shelf summary\n\n/cench preview — held-item preview\n\n/cench table — shelf "
+                        + "preview"),
+                page("More commands",
+                        "/cench find <enchant> — trace the shelves that hold it\n\n/cench about — mod info + links"),
                 page("If it's blank",
-                        "The 3 options blank out when:\n\n• chiseled + regular shelves are mixed, or\n\n• "
-                        + "conflicting enchants are stocked (e.g. Sharpness + Smite).\n\nUse /cench table to find "
-                        + "the problem.")
+                        "Options blank when:\n\n• chiseled + regular shelves mixed\n\n• conflicting enchants "
+                        + "stocked\n\nUse /cench table.")
         );
         ItemStack book = new ItemStack(Items.WRITTEN_BOOK);
         book.set(DataComponents.WRITTEN_BOOK_CONTENT,
