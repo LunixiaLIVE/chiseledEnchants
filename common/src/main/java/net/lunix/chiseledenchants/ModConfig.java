@@ -153,6 +153,14 @@ public class ModConfig {
     /** When book-enchanting is on, allow mutually-conflicting enchants on a single book (books can hold them). */
     public boolean allowConflictingOnBook = false;
 
+    // ── Conflicts (§7) ──
+    /**
+     * When conflicting enchants are stocked (e.g. Sharpness + Smite), resolve by book count — the one with
+     * MORE books wins and is granted; the loser is dropped (ties break alphabetically by id). false = the old
+     * behavior: any conflicting stock blanks the table's options. Default true.
+     */
+    public boolean resolveConflicts = true;
+
     // ── Cheaper enchant-table slots — the guaranteed LEVEL is capped per slot (top = the enchant's max).
     //    Keyed by the enchant's MAX level. mid/low = [min, max] rolled random-inclusive each use; 0 = none.
     //    Vanilla enchants max at 1-5 (the entries below). For MODDED enchants with a higher max, add keys

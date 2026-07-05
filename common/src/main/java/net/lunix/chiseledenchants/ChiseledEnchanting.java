@@ -73,7 +73,7 @@ public final class ChiseledEnchanting {
 
             RandomSource rng = level.getRandom();                       // truly-random book consumption
             Map<Holder<Enchantment>, List<Book>> byEnchant = scan(level, tablePos);
-            if (hasConflict(byEnchant, item, isBook, cfg)) return;       // conflicting library — table is blank
+            if (!cfg.resolveConflicts && hasConflict(byEnchant, item, isBook, cfg)) return;   // conflicting library — table is blank
             List<Landed> landed = resolve(byEnchant, item, isBook, slotId, seed, cfg);   // same seed as the displayed slot
             if (landed.isEmpty()) return;
 
@@ -169,11 +169,13 @@ public final class ChiseledEnchanting {
             boolean err = item.isEmpty() || !item.isEnchantable()
                     || (isBook && !cfg.allowBookEnchanting)
                     || hasMixedShelves(level, tablePos)
-                    || hasConflict(byEnchant, item, isBook, cfg);
+                    || (!cfg.resolveConflicts && hasConflict(byEnchant, item, isBook, cfg));
+            ItemStack lapis = enchantSlots.getItem(1);
+            int lapisAvail = lapis.is(Items.LAPIS_BLOCK) ? lapis.getCount() : 0;   // an option only unlocks once its lapis is in
             for (int i = 0; i < 3; i++) {
                 // same seed as the click, so the previewed cost/level is exactly what gets applied/charged
                 List<Landed> preview = err ? List.of() : resolve(byEnchant, item, isBook, i, seed, cfg);
-                if (preview.isEmpty()) {
+                if (preview.isEmpty() || lapisAvail < slotLapis(i, cfg)) {   // no enchants, or not enough lapis blocks yet
                     costs[i] = 0;
                     enchantClue[i] = -1;
                     levelClue[i] = -1;
@@ -212,24 +214,34 @@ public final class ChiseledEnchanting {
             int avgLevel = Math.max(1, Math.min(maxLevel, (int) Math.round((double) sumTop / levelDenom)));
             guarantees.add(new Guarantee(e.getKey(), landChance, avgLevel, bks));
         }
-        guarantees.sort(Comparator.comparingDouble(Guarantee::landChance).reversed());
+        // Order for conflict resolution: MOST books first, ties broken alphabetically by id (deterministic).
+        guarantees.sort(Comparator.comparingInt((Guarantee g) -> g.books().size()).reversed()
+                .thenComparing(g -> g.enchant().getRegisteredName()));
 
         List<Holder<Enchantment>> accepted = new ArrayList<>(EnchantmentHelper.getEnchantmentsForCrafting(item).keySet());
         boolean allowConflict = isBook && cfg.allowConflictingOnBook;
-        List<Landed> landed = new ArrayList<>();
+
+        // Resolve conflicts BEFORE the land roll, so the higher-book-count enchant always wins its group and the
+        // loser is dropped outright (never granted) — regardless of whether the winner rolls to land.
+        List<Guarantee> kept = new ArrayList<>();
         for (Guarantee g : guarantees) {
-            if (rng.nextFloat() >= g.landChance()) continue;                  // didn't land
-            int maxLevel = Math.max(1, g.enchant().value().getMaxLevel());
-            int cap = slotCap(slotId, maxLevel, rng, cfg);                    // per-slot tier ceiling
-            if (cap <= 0) continue;
             if (!isBook && !g.enchant().value().canEnchant(item)) continue;   // item-type compatibility
             if (!allowConflict) {
                 boolean conflict = false;
                 for (Holder<Enchantment> acc : accepted)
                     if (!acc.equals(g.enchant()) && !Enchantment.areCompatible(acc, g.enchant())) { conflict = true; break; }
-                if (conflict) continue;
+                if (conflict) continue;                                        // loses the conflict (fewer books)
             }
             accepted.add(g.enchant());
+            kept.add(g);
+        }
+
+        // Land roll + per-slot tier cap on the survivors.
+        List<Landed> landed = new ArrayList<>();
+        for (Guarantee g : kept) {
+            if (rng.nextFloat() >= g.landChance()) continue;                  // didn't land
+            int cap = slotCap(slotId, Math.max(1, g.enchant().value().getMaxLevel()), rng, cfg);
+            if (cap <= 0) continue;
             landed.add(new Landed(g.enchant(), Math.min(g.level(), cap), g.books()));
         }
         return landed;
@@ -263,7 +275,8 @@ public final class ChiseledEnchanting {
         if (isBook && !cfg.allowBookEnchanting) return new TablePreview(TablePreview.Kind.BOOK_DISABLED, List.of(), 0, 0);
         if (!isBook && !item.isEnchantable()) return new TablePreview(TablePreview.Kind.NOT_ENCHANTABLE, List.of(), 0, 0);
         Map<Holder<Enchantment>, List<Book>> byEnchant = scan(level, tablePos);
-        if (hasConflict(byEnchant, item, isBook, cfg)) return new TablePreview(TablePreview.Kind.CONFLICT, List.of(), 0, 0);
+        if (!cfg.resolveConflicts && hasConflict(byEnchant, item, isBook, cfg))
+            return new TablePreview(TablePreview.Kind.CONFLICT, List.of(), 0, 0);
 
         int chanceDenom = chanceDenom(cfg), levelDenom = levelDenom(cfg);
         List<PreviewEnchant> lines = new ArrayList<>();
@@ -299,13 +312,15 @@ public final class ChiseledEnchanting {
         ModConfig cfg = ModConfig.get();
         Map<Holder<Enchantment>, List<Book>> byEnchant = scan(level, tablePos);
 
-        // Item-agnostic conflict: any two eligible stocked enchants that conflict would blank a real table.
-        List<Holder<Enchantment>> elig = new ArrayList<>();
-        for (Holder<Enchantment> e : byEnchant.keySet()) if (eligible(e, cfg)) elig.add(e);
-        for (int i = 0; i < elig.size(); i++)
-            for (int j = i + 1; j < elig.size(); j++)
-                if (!Enchantment.areCompatible(elig.get(i), elig.get(j)))
-                    return new TablePreview(TablePreview.Kind.CONFLICT, List.of(), 0, 0);
+        // Item-agnostic conflict: with resolveConflicts off, any two conflicting stocked enchants blank a table.
+        if (!cfg.resolveConflicts) {
+            List<Holder<Enchantment>> elig = new ArrayList<>();
+            for (Holder<Enchantment> e : byEnchant.keySet()) if (eligible(e, cfg)) elig.add(e);
+            for (int i = 0; i < elig.size(); i++)
+                for (int j = i + 1; j < elig.size(); j++)
+                    if (!Enchantment.areCompatible(elig.get(i), elig.get(j)))
+                        return new TablePreview(TablePreview.Kind.CONFLICT, List.of(), 0, 0);
+        }
 
         int chanceDenom = chanceDenom(cfg), levelDenom = levelDenom(cfg);
         List<PreviewEnchant> lines = new ArrayList<>();

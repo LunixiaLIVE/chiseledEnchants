@@ -63,6 +63,13 @@ public final class GuideBook {
                   + perBlockStr + "% each) to protect them, up to " + maxProtStr + "%."
                 : "Each enchant applied has a " + eatPct + "% chance to eat its book.\n\nProtection is off — extra "
                   + "lapis does nothing.";
+        String conflictNote = cfg.resolveConflicts
+                ? "Conflicting enchants? The one with more books wins."
+                : "Don't stock conflicting enchants — it blanks the options.";
+        String blankReasons = cfg.resolveConflicts
+                ? "Options blank when:\n\n• mixed chiseled + regular shelves\n\n• too little lapis for the option."
+                : "Options blank when:\n\n• mixed chiseled + regular shelves\n\n• conflicting enchants stocked\n\n"
+                  + "• too little lapis.";
 
         List<Filterable<Component>> pages = List.of(
                 page("chiseledEnchants",
@@ -75,8 +82,8 @@ public final class GuideBook {
                         "Per enchant:\n\nChance to land = books / " + chanceDenom + "\n\nLevel = books averaged "
                         + "over " + levelDenom + " (blank slots = 0)."),
                 page("Max it out",
-                        guarantee + " max-level books of one enchant = that enchant at max, guaranteed.\n\nRegular "
-                        + "shelves mixed in blank the options."),
+                        guarantee + " max-level books of one enchant = that enchant at max, guaranteed.\n\n"
+                        + conflictNote),
                 page("The 3 options",
                         "Three tiers. Top = highest levels; the two below = reduced.\n\nEach tier costs its own "
                         + "lapis (" + lapisLow + "-" + lapisHigh + " blocks)."),
@@ -89,9 +96,7 @@ public final class GuideBook {
                         + "preview"),
                 page("More commands",
                         "/cench find <enchant> — trace the shelves that hold it\n\n/cench about — mod info + links"),
-                page("If it's blank",
-                        "Options blank when:\n\n• chiseled + regular shelves mixed\n\n• conflicting enchants "
-                        + "stocked\n\nUse /cench table.")
+                page("If it's blank", blankReasons)
         );
         ItemStack book = new ItemStack(Items.WRITTEN_BOOK);
         book.set(DataComponents.WRITTEN_BOOK_CONTENT,
