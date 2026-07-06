@@ -148,10 +148,15 @@ wide open. They're the part admins most often ask about, so here's the whole pic
 |:------:|:---------:|:-------:|:------------:|:---:|
 | [`multi_26.2`](https://github.com/LunixiaLIVE/chiseledEnchants/tree/multi_26.2) | 26.2.x | Fabric · NeoForge | Fabric API *(Fabric only)* | — |
 | [`multi_26.1`](https://github.com/LunixiaLIVE/chiseledEnchants/tree/multi_26.1) | 26.1, 26.1.1, 26.1.2 | Fabric · NeoForge | Fabric API *(Fabric only)* | [📄](https://github.com/LunixiaLIVE/chiseledEnchants/blob/multi_26.1/DESIGN.md) |
+| [`plugin`](https://github.com/LunixiaLIVE/chiseledEnchants/tree/plugin) | 26.1.x · 26.2.x | Paper 🚧 | — | — |
 
 > [!TIP]
 > Every `multi_*` branch builds **one universal jar** that runs on **both** Fabric and NeoForge (per-loader
 > `-fabric` / `-neoforge` jars are produced too). Fully self-contained — **no extra library mods to install**.
+
+> [!WARNING]
+> 🚧 The **Paper plugin** (`plugin` branch) is **in development** — not yet released. It's a separate
+> Bukkit/Paper build (one jar for 26.1.x + 26.2.x); the mod (Fabric/NeoForge) above is the released target.
 
 <details>
 <summary>🛠️ <b>Building from source</b></summary>
