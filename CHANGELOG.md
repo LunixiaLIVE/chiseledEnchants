@@ -1,4 +1,4 @@
-# Changelog — chiseledEnchants (Paper) (`paper`)
+# Changelog — chiseledEnchants (Paper) (`plugin`)
 
 Paper plugin port of the [chiseledEnchants](https://github.com/LunixiaLIVE/chiseledEnchants) mod.
 Minecraft **26.1.x + 26.2.x** · single jar (Bukkit API is cross-version) · server-side.
