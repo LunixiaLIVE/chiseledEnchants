@@ -1,15 +1,20 @@
 package net.lunix.chiseledenchants;
 
 import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.arguments.BoolArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
+import com.mojang.brigadier.suggestion.SuggestionProvider;
 import com.mojang.brigadier.tree.LiteralCommandNode;
 import net.minecraft.ChatFormatting;
 import net.minecraft.commands.CommandSourceStack;
 import net.minecraft.commands.Commands;
+import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.Identifier;
 import net.minecraft.network.chat.ClickEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.HoverEvent;
@@ -49,6 +54,26 @@ public final class ChiseledCommands {
 
     private ChiseledCommands() {}
 
+    /** Tab completion: config setting names. */
+    private static final SuggestionProvider<CommandSourceStack> SETTINGS =
+            (ctx, b) -> SharedSuggestionProvider.suggest(ModConfig.settingKeys(), b);
+
+    /** Tab completion for a setting's value: true/false for booleans, else the current value as a starting point. */
+    private static final SuggestionProvider<CommandSourceStack> SETTING_VALUES = (ctx, b) -> {
+        String key = StringArgumentType.getString(ctx, "setting");
+        if (ModConfig.typeOf(key) == boolean.class) return SharedSuggestionProvider.suggest(List.of("true", "false"), b);
+        String cur = ModConfig.getValue(key);
+        return cur == null ? b.buildFuture() : SharedSuggestionProvider.suggest(List.of(cur), b);
+    };
+
+    /** Tab completion: every enchant id in the live registry (for find + whitelist). */
+    private static final SuggestionProvider<CommandSourceStack> ENCHANTS = (ctx, b) -> {
+        List<String> ids = new ArrayList<>();
+        for (Identifier id : ctx.getSource().getServer().registryAccess()
+                .lookupOrThrow(Registries.ENCHANTMENT).keySet()) ids.add(id.toString());
+        return SharedSuggestionProvider.suggest(ids, b);
+    };
+
     public static void register(CommandDispatcher<CommandSourceStack> dispatcher) {
         LiteralCommandNode<CommandSourceStack> root = dispatcher.register(
                 Commands.literal("chiseledenchants")
@@ -61,13 +86,32 @@ public final class ChiseledCommands {
                                 .executes(ChiseledCommands::previewTable))
                         .then(Commands.literal("find")
                                 .then(Commands.argument("enchant", StringArgumentType.greedyString())
+                                        .suggests(ENCHANTS)
                                         .executes(ctx -> find(ctx, StringArgumentType.getString(ctx, "enchant")))))
                         .then(Commands.literal("reload")
                                 .requires(src -> src.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER))
                                 .executes(ChiseledCommands::reload))
                         .then(Commands.literal("reset")
                                 .requires(src -> src.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER))
-                                .executes(ChiseledCommands::reset)));
+                                .executes(ChiseledCommands::reset))
+                        .then(Commands.literal("get")
+                                .requires(src -> src.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER))
+                                .then(Commands.argument("setting", StringArgumentType.word())
+                                        .suggests(SETTINGS)
+                                        .executes(ChiseledCommands::getSetting)))
+                        .then(Commands.literal("set")
+                                .requires(src -> src.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER))
+                                .then(Commands.argument("setting", StringArgumentType.word())
+                                        .suggests(SETTINGS)
+                                        .then(Commands.argument("value", StringArgumentType.greedyString())
+                                                .suggests(SETTING_VALUES)
+                                                .executes(ChiseledCommands::setSetting))))
+                        .then(Commands.literal("whitelist")
+                                .requires(src -> src.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER))
+                                .then(Commands.argument("enchant", StringArgumentType.word())
+                                        .suggests(ENCHANTS)
+                                        .then(Commands.argument("allowed", BoolArgumentType.bool())
+                                                .executes(ChiseledCommands::setWhitelist)))));
         dispatcher.register(Commands.literal("cench").redirect(root));
     }
 
@@ -313,6 +357,49 @@ public final class ChiseledCommands {
         ctx.getSource().sendSuccess(() -> Component.literal(
                 "Wrote a fresh default chiseledEnchants config (old one saved as chiseledenchants.json.bak). "
                 + "Run /cench reload to apply.").withStyle(ChatFormatting.GREEN), true);
+        return 1;
+    }
+
+    /** Show a setting's current value (as stored in the config file). */
+    private static int getSetting(CommandContext<CommandSourceStack> ctx) {
+        String key = StringArgumentType.getString(ctx, "setting");
+        String v = ModConfig.getValue(key);
+        if (v == null) {
+            ctx.getSource().sendFailure(Component.literal("Unknown setting '" + key + "'."));
+            return 0;
+        }
+        ctx.getSource().sendSuccess(() -> Component.literal(key + " = ")
+                .withStyle(ChatFormatting.GRAY)
+                .append(Component.literal(v).withStyle(ChatFormatting.AQUA))
+                .append(Component.literal("  (in the config file)").withStyle(ChatFormatting.DARK_GRAY)), false);
+        return 1;
+    }
+
+    /** Set a config setting in the FILE (not applied until /cench reload). */
+    private static int setSetting(CommandContext<CommandSourceStack> ctx) {
+        String key = StringArgumentType.getString(ctx, "setting");
+        String value = StringArgumentType.getString(ctx, "value");
+        if (ModConfig.setInFile(key, value)) {
+            ctx.getSource().sendSuccess(() -> Component.literal("Set ")
+                    .withStyle(ChatFormatting.GREEN)
+                    .append(Component.literal(key + " = " + value).withStyle(ChatFormatting.WHITE))
+                    .append(Component.literal(" in the config. Run /cench reload to apply.").withStyle(ChatFormatting.GREEN)), true);
+            return 1;
+        }
+        ctx.getSource().sendFailure(Component.literal("Couldn't set '" + key
+                + "' — unknown setting, or the value isn't valid for its type."));
+        return 0;
+    }
+
+    /** Toggle a per-enchant whitelist entry in the FILE (not applied until /cench reload). */
+    private static int setWhitelist(CommandContext<CommandSourceStack> ctx) {
+        String ench = StringArgumentType.getString(ctx, "enchant");
+        boolean allowed = BoolArgumentType.getBool(ctx, "allowed");
+        ModConfig.setWhitelistInFile(ench, allowed);
+        ctx.getSource().sendSuccess(() -> Component.literal("Whitelist: ")
+                .withStyle(ChatFormatting.GREEN)
+                .append(Component.literal(ench + " = " + allowed).withStyle(ChatFormatting.WHITE))
+                .append(Component.literal(" in the config. Run /cench reload to apply.").withStyle(ChatFormatting.GREEN)), true);
         return 1;
     }
 

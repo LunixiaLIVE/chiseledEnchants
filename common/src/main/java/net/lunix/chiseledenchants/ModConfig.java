@@ -11,9 +11,14 @@ import net.minecraft.world.item.enchantment.Enchantment;
 import java.io.IOException;
 import java.io.Reader;
 import java.io.Writer;
+import java.lang.reflect.Field;
+import java.lang.reflect.Modifier;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -213,11 +218,102 @@ public class ModConfig {
     }
 
     public static void save() {
+        saveConfig(instance);
+    }
+
+    private static void saveConfig(ModConfig cfg) {
         try (Writer writer = Files.newBufferedWriter(configPath())) {
-            GSON.toJson(instance, writer);
+            GSON.toJson(cfg, writer);
         } catch (IOException e) {
             ChiseledEnchantsCommon.LOGGER.warn("[chiseledEnchants] Failed to save config: {}", e.getMessage());
         }
+    }
+
+    /** Load the config file into a fresh object (not the running instance); defaults if absent/unreadable. */
+    private static ModConfig loadFromFileOrDefault() {
+        Path path = configPath();
+        if (Files.exists(path)) {
+            try (Reader reader = Files.newBufferedReader(path)) {
+                ModConfig loaded = GSON.fromJson(reader, ModConfig.class);
+                if (loaded != null) return loaded;
+            } catch (IOException ignored) { }
+        }
+        return new ModConfig();
+    }
+
+    // ── In-game config editing (the /cench set|get|whitelist commands edit the FILE; /cench reload applies) ──
+
+    /** Every scalar setting name (int/boolean/double/String public field), sorted — for tab completion. */
+    public static List<String> settingKeys() {
+        List<String> keys = new ArrayList<>();
+        for (Field f : ModConfig.class.getFields()) {
+            if (Modifier.isStatic(f.getModifiers())) continue;
+            Class<?> t = f.getType();
+            if (t == int.class || t == boolean.class || t == double.class || t == String.class) keys.add(f.getName());
+        }
+        Collections.sort(keys);
+        return keys;
+    }
+
+    /** The field type of a setting, or null if it isn't an editable scalar setting. */
+    public static Class<?> typeOf(String key) {
+        try {
+            Field f = ModConfig.class.getField(key);
+            if (Modifier.isStatic(f.getModifiers())) return null;
+            Class<?> t = f.getType();
+            return (t == int.class || t == boolean.class || t == double.class || t == String.class) ? t : null;
+        } catch (NoSuchFieldException e) {
+            return null;
+        }
+    }
+
+    /** Current value of a setting AS STORED IN THE FILE (what /cench reload would apply), or null if unknown. */
+    public static String getValue(String key) {
+        if (typeOf(key) == null) return null;
+        try {
+            return String.valueOf(ModConfig.class.getField(key).get(loadFromFileOrDefault()));
+        } catch (ReflectiveOperationException e) {
+            return null;
+        }
+    }
+
+    /** Set a scalar setting IN THE FILE (running config untouched). Returns false on unknown key / bad value. */
+    public static boolean setInFile(String key, String rawValue) {
+        Class<?> t = typeOf(key);
+        if (t == null) return false;
+        ModConfig cfg = loadFromFileOrDefault();
+        try {
+            Field f = ModConfig.class.getField(key);
+            if (t == int.class) f.setInt(cfg, Integer.parseInt(rawValue.trim()));
+            else if (t == double.class) f.setDouble(cfg, Double.parseDouble(rawValue.trim()));
+            else if (t == boolean.class) {
+                Boolean b = parseBoolStrict(rawValue);
+                if (b == null) return false;
+                f.setBoolean(cfg, b);
+            } else {   // String — verbatim; a couple of sentinels clear it to ""
+                String v = rawValue;
+                if (v.equals("\"\"") || v.equalsIgnoreCase("blank") || v.equalsIgnoreCase("none")) v = "";
+                f.set(cfg, v);
+            }
+        } catch (ReflectiveOperationException | NumberFormatException e) {
+            return false;
+        }
+        saveConfig(cfg);
+        return true;
+    }
+
+    /** Flip a per-enchant whitelist entry IN THE FILE (running config untouched). */
+    public static void setWhitelistInFile(String enchantId, boolean allowed) {
+        ModConfig cfg = loadFromFileOrDefault();
+        cfg.enchantWhitelist.put(enchantId.toLowerCase(), allowed);
+        saveConfig(cfg);
+    }
+
+    private static Boolean parseBoolStrict(String s) {
+        String v = s.trim().toLowerCase();
+        if (v.equals("true")) return Boolean.TRUE;
+        if (v.equals("false")) return Boolean.FALSE;
+        return null;
     }
 
     /**
