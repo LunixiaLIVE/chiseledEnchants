@@ -32,6 +32,13 @@ public class ModConfig {
      * only ever replicate an enchant you already own at max, never manufacture a higher tier. Default 6.
      */
     public int booksForFullChance = 6;
+    /**
+     * When true, BELOW-max books also add to the LAND CHANCE (never the level) — but only for an enchant that
+     * has ≥1 max-level book in the setup; with no max book present, that enchant's books are ignored. Each book
+     * adds (1 / booksForFullChance) × (bookLevel / maxLevel) to the chance (a max book = a full share). The
+     * enchant still lands at MAX level, so this can't manufacture a tier you don't own. Default false.
+     */
+    public boolean smallBooksChanceBoost = false;
 
     // ── Special enchanting table (the crafted gate) ──
     /**
@@ -59,6 +66,8 @@ public class ModConfig {
     public String recipeReplacesBook = "minecraft:dragon_head";        // the BOOK slot (top center, x1)
     public String recipeReplacesDiamond = "minecraft:netherite_ingot"; // the 2 DIAMOND slots (x2)
     public String recipeReplacesObsidian = "minecraft:obsidian";       // the 4 OBSIDIAN slots (x4)
+    /** Fill the recipe's 2 EMPTY corner slots to make the table pricier. Blank = leave them empty (default). */
+    public String recipeReplacesEmptySlots = "";                       // the 2 EMPTY corners (x2); blank = empty
 
     /**
      * Text shown on the GREEN "ready" status boss bar above the modded table (it turns RED with a reason when
@@ -98,9 +107,9 @@ public class ModConfig {
 
     // ── /cench about links — fill in and /cench reload; blank = shown as "coming soon" ──
     public String linkGithub = "https://github.com/LunixiaLIVE/chiseledEnchants";
-    public String linkModrinth = "https://modrinth.com/project/chiseledenchants";
-    public String linkCurseforge = "";
-    public String linkDiscord = "";
+    public String linkModrinth = "https://modrinth.com/mod/chiseledenchants";
+    public String linkCurseforge = "https://www.curseforge.com/minecraft/mc-mods/chiseledenchants-multi";
+    public String linkDiscord = "https://discord.gg/J9QnJWDFB3";
 
     // ── Modded-table economy (§5/§6) ──
     /** XP levels a MAXED enchant costs (any type). Per enchant: ceil(this × level / maxLevel). No cap. Default 10. */
@@ -119,6 +128,12 @@ public class ModConfig {
      * 0.02 (2%) per block. Default 14.
      */
     public int lapisCost = 14;
+    /**
+     * Lapis TYPE the modded table accepts and consumes: true = lapis BLOCKS (default), false = lapis GEMS. The
+     * slot takes ONLY the configured type; {@link #lapisCost} and surplus protection are counted in that unit
+     * (so 14 gems is far cheaper than 14 blocks — tune lapisCost to taste when switching to gems).
+     */
+    public boolean useBlocks = true;
     /**
      * Whether extra lapis blocks can buy book protection at all. false = the table consumes ONLY the option's
      * required blocks (no protection, no surplus taken); books are eaten at {@link #bookConsumeChance}. Default true.

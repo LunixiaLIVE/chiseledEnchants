@@ -149,9 +149,11 @@ public final class ChiseledCommands {
             return 1;
         }
         int totalBooks = byEnchant.values().stream().mapToInt(List::size).sum();
+        String rule = cfg.smallBooksChanceBoost
+                ? "max books needed to unlock; lower books boost the chance; " + chanceDenom + " = 100% land"
+                : "only MAX-level books count; " + chanceDenom + " = 100% land";
         src.sendSuccess(() -> Component.literal(byEnchant.size() + " enchant(s), " + totalBooks
-                + " book(s)  ·  only MAX-level books count; " + chanceDenom + " = 100% land")
-                .withStyle(ChatFormatting.GRAY), false);
+                + " book(s)  ·  " + rule).withStyle(ChatFormatting.GRAY), false);
 
         List<Map.Entry<Holder<Enchantment>, List<ChiseledEnchanting.Book>>> entries = new ArrayList<>(byEnchant.entrySet());
         entries.sort(Comparator.comparing(e -> e.getKey().getRegisteredName()));
@@ -238,12 +240,12 @@ public final class ChiseledCommands {
                                         .withStyle(pct >= 100 ? ChatFormatting.GREEN : ChatFormatting.AQUA));
                     }, false);
                 }
+                String lnoun = ChiseledEnchanting.lapisNoun(ModConfig.get());
                 src.sendSuccess(() -> Component.literal("Cost: " + p.xpLevels() + " XP level"
-                        + (p.xpLevels() == 1 ? "" : "s") + " + " + p.lapisCost() + " lapis block"
-                        + (p.lapisCost() == 1 ? "" : "s"))
+                        + (p.xpLevels() == 1 ? "" : "s") + " + " + p.lapisCost() + " lapis " + lnoun)
                         .withStyle(ChatFormatting.GOLD), false);
                 if (ModConfig.get().bookProtectionEnabled) {
-                    src.sendSuccess(() -> Component.literal("Extra lapis blocks beyond the cost buy book protection.")
+                    src.sendSuccess(() -> Component.literal("Extra lapis " + lnoun + " beyond the cost buy book protection.")
                             .withStyle(ChatFormatting.DARK_GRAY), false);
                 }
             }
@@ -334,21 +336,25 @@ public final class ChiseledCommands {
             return out.append(Component.literal("  → disabled by config").withStyle(ChatFormatting.DARK_GRAY));
         }
 
-        if (maxCount == 0) {                                             // only below-max books → nothing counts
-            out.append(Component.literal("  → 0% (no " + roman(maxLevel) + " books — below-max don't count)")
-                    .withStyle(ChatFormatting.YELLOW));
+        if (maxCount == 0) {                                             // no max book → nothing counts
+            String why = cfg.smallBooksChanceBoost
+                    ? "no " + roman(maxLevel) + " book — below-max are ignored without one"
+                    : "no " + roman(maxLevel) + " books — below-max don't count";
+            out.append(Component.literal("  → 0% (" + why + ")").withStyle(ChatFormatting.YELLOW));
             return out;
         }
 
-        int chancePct = (int) Math.round(100.0 * Math.min(1.0, (double) maxCount / chanceDenom));
+        List<ChiseledEnchanting.Book> counting = ChiseledEnchanting.countingBooks(ench, books, cfg);
+        int chancePct = (int) Math.round(100.0 * ChiseledEnchanting.landChance(ench, counting, cfg));
         out.append(Component.literal("  → " + chancePct + "% land, " + roman(maxLevel))
                 .withStyle(chancePct >= 100 ? ChatFormatting.GREEN : ChatFormatting.AQUA));
         if (belowCount > 0) {
-            out.append(Component.literal("  (⚠ " + belowCount + " below-max won't count)")
-                    .withStyle(ChatFormatting.YELLOW));
+            out.append(cfg.smallBooksChanceBoost
+                    ? Component.literal("  (+" + belowCount + " below-max boosting)").withStyle(ChatFormatting.DARK_GRAY)
+                    : Component.literal("  (⚠ " + belowCount + " below-max won't count)").withStyle(ChatFormatting.YELLOW));
         }
         int excess = Math.max(0, maxCount - chanceDenom);
-        if (excess > 0) {
+        if (!cfg.smallBooksChanceBoost && excess > 0) {
             out.append(Component.literal("  (" + excess + " excess)").withStyle(ChatFormatting.DARK_GRAY));
         }
         return out;

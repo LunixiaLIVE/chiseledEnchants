@@ -15,6 +15,7 @@ import net.minecraft.world.BossEvent;
 import net.minecraft.world.Container;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.ContainerLevelAccess;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.enchantment.Enchantment;
@@ -87,13 +88,11 @@ public final class ChiseledEnchanting {
             int xpLevels = xpCost(landed, cfg);                         // §5/§6 — XP is per landed enchant
             int lapisRequired = lapisCost(cfg);                         // §6 — the flat lapis cost that unlocks the option
             ItemStack lapis = enchantSlots.getItem(1);
-            int lapisAvail = lapis.is(Items.LAPIS_BLOCK) ? lapis.getCount() : 0;   // the table requires lapis BLOCKS (gems don't count)
+            int lapisAvail = lapis.is(lapisItem(cfg)) ? lapis.getCount() : 0;   // the table requires the configured lapis type
             boolean creative = player.hasInfiniteMaterials();
             if (!creative && lapisAvail < lapisRequired) {
-                if (lapis.is(Items.LAPIS_LAZULI)) {   // used gems — nudge toward blocks (we can't repaint the slot icon)
-                    player.sendOverlayMessage(Component.literal("The " + cfg.specialTableName
-                            + " needs lapis BLOCKS, not gems.").withStyle(ChatFormatting.RED));
-                }
+                player.sendOverlayMessage(Component.literal("The " + cfg.specialTableName + " needs "
+                        + lapisRequired + " lapis " + lapisNoun(cfg) + ".").withStyle(ChatFormatting.RED));
                 return;
             }
             if (!creative && player.experienceLevel < xpLevels) return;
@@ -180,7 +179,7 @@ public final class ChiseledEnchanting {
                             : hasConflict(byEnchant, item, isBook, cfg));
             if (err) return;
             ItemStack lapis = enchantSlots.getItem(1);
-            int lapisAvail = lapis.is(Items.LAPIS_BLOCK) ? lapis.getCount() : 0;   // the option unlocks once its lapis is in
+            int lapisAvail = lapis.is(lapisItem(cfg)) ? lapis.getCount() : 0;   // the option unlocks once its lapis is in
             if (lapisAvail < lapisCost(cfg)) return;
             List<Landed> preview = resolve(byEnchant, item, isBook, seed, cfg);    // same seed as the click
             if (preview.isEmpty()) return;
@@ -203,18 +202,18 @@ public final class ChiseledEnchanting {
     private static List<Landed> resolve(Map<Holder<Enchantment>, List<Book>> byEnchant, ItemStack item,
                                         boolean isBook, long seed, ModConfig cfg) {
         RandomSource rng = RandomSource.create(seed);   // shared seed → displayed cost == charged
-        int chanceDenom = chanceDenom(cfg);
         List<Guarantee> guarantees = new ArrayList<>();
         for (Map.Entry<Holder<Enchantment>, List<Book>> e : byEnchant.entrySet()) {
             if (!eligible(e.getKey(), cfg)) continue;                        // §5 curse/treasure gating
-            List<Book> max = maxBooks(e.getKey(), e.getValue());            // only max-level books count
-            if (max.isEmpty()) continue;                                    // below-max books are flagged, never used
-            double landChance = Math.min(1.0, (double) max.size() / chanceDenom);
+            List<Book> counting = countingBooks(e.getKey(), e.getValue(), cfg);   // max-only, or all (boost)
+            if (counting.isEmpty()) continue;                               // no max book → ignored
+            double landChance = landChance(e.getKey(), counting, cfg);
             int level = Math.max(1, e.getKey().value().getMaxLevel());
-            guarantees.add(new Guarantee(e.getKey(), landChance, level, max));
+            guarantees.add(new Guarantee(e.getKey(), landChance, level, counting));
         }
-        // Order for conflict resolution: MOST books first, ties broken alphabetically by id (deterministic).
-        guarantees.sort(Comparator.comparingInt((Guarantee g) -> g.books().size()).reversed()
+        // Order for conflict resolution: MOST MAX-LEVEL books first (the unlocking books — boost doesn't change
+        // who wins a conflict), ties broken alphabetically by id (deterministic).
+        guarantees.sort(Comparator.comparingInt((Guarantee g) -> maxBooks(g.enchant(), g.books()).size()).reversed()
                 .thenComparing(g -> g.enchant().getRegisteredName()));
 
         List<Holder<Enchantment>> accepted = new ArrayList<>(EnchantmentHelper.getEnchantmentsForCrafting(item).keySet());
@@ -252,12 +251,56 @@ public final class ChiseledEnchanting {
         return out;
     }
 
-    /** True if any ELIGIBLE stocked enchant has a below-max book — flagged (status bar goes red), never counted. */
+    /**
+     * The books that COUNT for an enchant: only its max-level books, or — when {@code smallBooksChanceBoost} is
+     * on AND a max book is present — ALL its books (below-max ones help the chance). Empty when no max-level book
+     * of that enchant is stocked (below-max-only enchants are ignored, preserving the anti-launder rule).
+     */
+    static List<Book> countingBooks(Holder<Enchantment> ench, List<Book> all, ModConfig cfg) {
+        List<Book> max = maxBooks(ench, all);
+        if (max.isEmpty()) return List.of();
+        return cfg.smallBooksChanceBoost ? all : max;
+    }
+
+    /**
+     * Land chance from the counting books. Without the boost: min(1, maxBooks / booksForFullChance). With it:
+     * min(1, Σ (1/booksForFullChance) × (bookLevel / maxLevel)) — each book adds a level-weighted share, a max
+     * book adding a full 1/booksForFullChance.
+     */
+    static double landChance(Holder<Enchantment> ench, List<Book> counting, ModConfig cfg) {
+        if (counting.isEmpty()) return 0.0;
+        double denom = chanceDenom(cfg);
+        if (!cfg.smallBooksChanceBoost) return Math.min(1.0, counting.size() / denom);
+        int max = Math.max(1, ench.value().getMaxLevel());
+        double sum = 0.0;
+        for (Book b : counting) sum += (1.0 / denom) * (Math.min(b.level(), max) / (double) max);
+        return Math.min(1.0, sum);
+    }
+
+    /** The lapis item the modded table accepts/consumes (config): lapis blocks or gems. */
+    public static Item lapisItem(ModConfig cfg) {
+        return cfg.useBlocks ? Items.LAPIS_BLOCK : Items.LAPIS_LAZULI;
+    }
+
+    /** "blocks" / "gems" — for player-facing text. */
+    public static String lapisNoun(ModConfig cfg) {
+        return cfg.useBlocks ? "blocks" : "gems";
+    }
+
+    /**
+     * True if any ELIGIBLE stocked enchant has a below-max book that WON'T count (status bar goes red). Without
+     * the boost, every below-max book is dead weight. With the boost, a below-max book only fails to count when
+     * its enchant has NO max-level book present (so those books are ignored).
+     */
     public static boolean hasFlaggedBooks(Map<Holder<Enchantment>, List<Book>> byEnchant, ModConfig cfg) {
         for (Map.Entry<Holder<Enchantment>, List<Book>> e : byEnchant.entrySet()) {
             if (!eligible(e.getKey(), cfg)) continue;
             int max = Math.max(1, e.getKey().value().getMaxLevel());
-            for (Book b : e.getValue()) if (b.level() < max) return true;
+            boolean hasMax = !maxBooks(e.getKey(), e.getValue()).isEmpty();
+            for (Book b : e.getValue()) {
+                if (b.level() >= max) continue;                              // a max book — fine
+                if (!cfg.smallBooksChanceBoost || !hasMax) return true;      // this below-max book can't count
+            }
         }
         return false;
     }
@@ -337,19 +380,18 @@ public final class ChiseledEnchanting {
                 : hasConflict(byEnchant, item, isBook, cfg))
             return new TablePreview(TablePreview.Kind.CONFLICT, List.of(), 0, 0);
 
-        int chanceDenom = chanceDenom(cfg);
         List<PreviewEnchant> lines = new ArrayList<>();
         List<Landed> forCost = new ArrayList<>();
         for (Map.Entry<Holder<Enchantment>, List<Book>> e : byEnchant.entrySet()) {
             Holder<Enchantment> ench = e.getKey();
             if (!eligible(ench, cfg)) continue;
             if (!isBook && !ench.value().canEnchant(item)) continue;      // silently skip incompatible
-            List<Book> max = maxBooks(ench, e.getValue());               // only max-level books count
-            if (max.isEmpty()) continue;                                 // below-max only → flagged, doesn't apply
-            double chance = Math.min(1.0, (double) max.size() / chanceDenom);
+            List<Book> counting = countingBooks(ench, e.getValue(), cfg);
+            if (counting.isEmpty()) continue;                            // no max book → doesn't apply
+            double chance = landChance(ench, counting, cfg);
             int lvl = Math.max(1, ench.value().getMaxLevel());
             lines.add(new PreviewEnchant(ench, lvl, chance));
-            forCost.add(new Landed(ench, lvl, max));
+            forCost.add(new Landed(ench, lvl, counting));
         }
         if (lines.isEmpty()) return new TablePreview(TablePreview.Kind.NONE_APPLICABLE, List.of(), 0, 0);
         lines.sort(Comparator.comparingDouble(PreviewEnchant::landChance).reversed());
@@ -372,18 +414,17 @@ public final class ChiseledEnchanting {
                 : anyConflictShelves(byEnchant, cfg);
         if (conflict) return new TablePreview(TablePreview.Kind.CONFLICT, List.of(), 0, 0);
 
-        int chanceDenom = chanceDenom(cfg);
         List<PreviewEnchant> lines = new ArrayList<>();
         List<Landed> forCost = new ArrayList<>();
         for (Map.Entry<Holder<Enchantment>, List<Book>> e : byEnchant.entrySet()) {
             Holder<Enchantment> ench = e.getKey();
             if (!eligible(ench, cfg)) continue;
-            List<Book> max = maxBooks(ench, e.getValue());              // only max-level books count
-            if (max.isEmpty()) continue;                                // below-max only → flagged, doesn't apply
-            double chance = Math.min(1.0, (double) max.size() / chanceDenom);
+            List<Book> counting = countingBooks(ench, e.getValue(), cfg);
+            if (counting.isEmpty()) continue;                           // no max book → doesn't apply
+            double chance = landChance(ench, counting, cfg);
             int lvl = Math.max(1, ench.value().getMaxLevel());
             lines.add(new PreviewEnchant(ench, lvl, chance));
-            forCost.add(new Landed(ench, lvl, max));
+            forCost.add(new Landed(ench, lvl, counting));
         }
         if (lines.isEmpty()) return new TablePreview(TablePreview.Kind.NONE_APPLICABLE, List.of(), 0, 0);
         lines.sort(Comparator.comparingDouble(PreviewEnchant::landChance).reversed());

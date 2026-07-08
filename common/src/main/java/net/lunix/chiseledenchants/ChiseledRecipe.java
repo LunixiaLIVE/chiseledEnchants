@@ -21,6 +21,7 @@ import net.minecraft.world.item.crafting.RecipeHolder;
 import net.minecraft.world.item.crafting.ShapedRecipe;
 import net.minecraft.world.item.crafting.ShapedRecipePattern;
 
+import java.util.HashMap;
 import java.util.Map;
 
 /**
@@ -42,10 +43,18 @@ public final class ChiseledRecipe {
         Item book = item(cfg.recipeReplacesBook, Items.DRAGON_HEAD);
         Item diamond = item(cfg.recipeReplacesDiamond, Items.NETHERITE_INGOT);
         Item obsidian = item(cfg.recipeReplacesObsidian, Items.OBSIDIAN);
+        Item corners = itemOrNull(cfg.recipeReplacesEmptySlots);   // null = leave the 2 corner slots empty
 
-        ShapedRecipePattern pattern = ShapedRecipePattern.of(
-                Map.of('b', Ingredient.of(book), 'd', Ingredient.of(diamond), '#', Ingredient.of(obsidian)),
-                " b ", "d#d", "###");
+        Map<Character, Ingredient> keys = new HashMap<>();
+        keys.put('b', Ingredient.of(book));
+        keys.put('d', Ingredient.of(diamond));
+        keys.put('#', Ingredient.of(obsidian));
+        String topRow = " b ";
+        if (corners != null) {
+            keys.put('e', Ingredient.of(corners));
+            topRow = "ebe";                                        // fill the two corners to make it pricier
+        }
+        ShapedRecipePattern pattern = ShapedRecipePattern.of(keys, topRow, "d#d", "###");
 
         String tableName = (cfg.specialTableName == null || cfg.specialTableName.isBlank())
                 ? "Chiseled Enchanter" : cfg.specialTableName.trim();
@@ -68,6 +77,14 @@ public final class ChiseledRecipe {
         Identifier loc = Identifier.tryParse(id.trim());
         if (loc == null) { warn(id); return fallback; }
         return BuiltInRegistries.ITEM.getOptional(loc).orElseGet(() -> { warn(id); return fallback; });
+    }
+
+    /** Like {@link #item} but blank/unknown → null (used for the optional empty-corner filler). */
+    private static Item itemOrNull(String id) {
+        if (id == null || id.isBlank()) return null;
+        Identifier loc = Identifier.tryParse(id.trim());
+        if (loc == null) { warn(id); return null; }
+        return BuiltInRegistries.ITEM.getOptional(loc).orElseGet(() -> { warn(id); return null; });
     }
 
     private static void warn(String id) {

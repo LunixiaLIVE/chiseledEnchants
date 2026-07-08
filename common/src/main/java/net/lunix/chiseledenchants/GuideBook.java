@@ -42,6 +42,7 @@ public final class GuideBook {
         int guarantee = chanceDenom;
         int maxCost = cfg.costOfMaxEnchant;
         int lapis = ChiseledEnchanting.lapisCost(cfg);
+        String lnoun = ChiseledEnchanting.lapisNoun(cfg);   // "blocks" / "gems" per config
         // Config holds 0–1 fractions; the guide shows players percentages, so scale up for display.
         double perBlockPct = Math.max(0.0, cfg.protectionPerBlock) * 100.0;
         String perBlockStr = perBlockPct == Math.floor(perBlockPct) ? Integer.toString((int) perBlockPct) : Double.toString(perBlockPct);
@@ -70,6 +71,16 @@ public final class GuideBook {
                   + "• too little lapis."
                 : "Options blank when:\n\n• mixed chiseled + regular shelves\n\n• conflicting enchants stocked\n\n"
                   + "• too little lapis.";
+        String maxBooksPage = cfg.smallBooksChanceBoost
+                ? "A max-level book unlocks an enchant and gives a full share of the chance.\n\nLower books also "
+                  + "add to the chance (only with a max book present) — never the level."
+                : "ONLY max-level books count (Sharpness V, Mending I, Unbreaking III).\n\nBelow-max books are "
+                  + "flagged and ignored.";
+        String guaranteesPage = cfg.smallBooksChanceBoost
+                ? "Per enchant:\n\n" + guarantee + " max books = 100% land. Lower books add (level ÷ max) of a "
+                  + "share.\n\nEverything lands at max."
+                : "Per enchant:\n\nChance to land = max books / " + chanceDenom + "\n\nEvery landed enchant "
+                  + "comes at its max level.";
 
         List<Filterable<Component>> pages = List.of(
                 page("chiseledEnchants",
@@ -78,20 +89,16 @@ public final class GuideBook {
                 page("The shelves",
                         "Ring the table with chiseled bookshelves (usual spots, 1-block gap).\n\nStock them with "
                         + "single-enchant books."),
-                page("Max books only",
-                        "ONLY max-level books count (Sharpness V, Mending I, Unbreaking III).\n\nBelow-max books "
-                        + "are flagged and ignored."),
-                page("Guarantees",
-                        "Per enchant:\n\nChance to land = max books / " + chanceDenom + "\n\nEvery landed enchant "
-                        + "comes at its max level."),
+                page("Books that count", maxBooksPage),
+                page("Guarantees", guaranteesPage),
                 page("Max it out",
                         guarantee + " max-level books of one enchant = it at max, guaranteed.\n\n" + conflictNote),
                 page("The option",
-                        "One option, always the enchant's MAX level.\n\nUnlocks for " + lapis + " lapis BLOCKS "
-                        + "(not gems) in the slot."),
+                        "One option, always the enchant's MAX level.\n\nUnlocks for " + lapis + " lapis " + lnoun
+                        + " in the slot."),
                 page("Cost",
-                        "XP: about " + maxCost + " levels per maxed enchant that lands.\n\nLapis: " + lapis
-                        + " blocks flat to enchant."),
+                        "XP: about " + maxCost + " levels per maxed enchant that lands.\n\nLapis: " + lapis + " "
+                        + lnoun + " flat to enchant."),
                 page("Protecting books", protectPage),
                 page("Commands",
                         "/cench — shelf summary\n\n/cench preview — held-item preview\n\n/cench table — shelf "
