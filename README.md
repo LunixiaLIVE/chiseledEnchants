@@ -6,7 +6,7 @@
 
 ![](https://img.shields.io/badge/Fabric-DBA463?style=for-the-badge&logoColor=white)&nbsp;![](https://img.shields.io/badge/NeoForge-F16436?style=for-the-badge&logoColor=white)&nbsp;
 
-<sub>🚧 Modrinth — coming soon (pending approval)</sub>&nbsp;[![](https://img.shields.io/badge/Download_on-CurseForge-F16436?style=for-the-badge&logo=curseforge&logoColor=white)](https://www.curseforge.com/minecraft/mc-mods/chiseledenchants-multi)
+[![](https://img.shields.io/badge/Download_on-Modrinth-00AF5C?style=for-the-badge&logo=modrinth&logoColor=white)](https://modrinth.com/mod/chiseledenchants)&nbsp;[![](https://img.shields.io/badge/Download_on-CurseForge-F16436?style=for-the-badge&logo=curseforge&logoColor=white)](https://www.curseforge.com/minecraft/mc-mods/chiseledenchants-multi)
 
 ![](https://img.shields.io/badge/Minecraft-26.x-62B47A?style=flat-square) ![](https://img.shields.io/badge/Side-Single_Player_%26_Server-8E44AD?style=flat-square) ![](https://img.shields.io/badge/Fabric_API-required_on_Fabric-4A90D9?style=flat-square) ![](https://img.shields.io/badge/License-MIT-blue?style=flat-square) ![](https://img.shields.io/badge/Status-feature--complete-brightgreen?style=flat-square)
 
@@ -68,6 +68,7 @@ the real file is plain JSON):
 {
   // ── Guarantee strength ──
   "booksForFullChance": 6,          // max-level books of an enchant for a 100% chance to land
+  "smallBooksChanceBoost": false,   // below-max books also add to the chance (never the level), only with a max book present
 
   // ── The special "Chiseled Enchanter" table ──
   "requireSpecialTable": true,      // gate targeting to the crafted table (false = any table + chiseled shelves)
@@ -76,6 +77,7 @@ the real file is plain JSON):
   "recipeReplacesBook": "minecraft:dragon_head",        // the recipe's book slot
   "recipeReplacesDiamond": "minecraft:netherite_ingot", // the 2 diamond slots
   "recipeReplacesObsidian": "minecraft:obsidian",       // the 4 obsidian slots
+  "recipeReplacesEmptySlots": "",                       // fill the 2 empty corners to make it pricier (blank = empty)
   "tableOpenNotice": "This table runs on lapis blocks", // green status-bar text (blank = the table's name)
 
   // ── Scan geometry (book capacity only; vanilla enchanting power is untouched) ──
@@ -85,7 +87,8 @@ the real file is plain JSON):
   // ── Economy ──
   "costOfMaxEnchant": 10,           // XP levels a maxed enchant costs (scales by level)
   "xpFromFirstLevels": true,        // charge cheap "first levels" points vs. levels off the top
-  "lapisCost": 14,                  // lapis BLOCKS to unlock the option; surplus buys book protection
+  "useBlocks": true,                // lapis type the table takes: true = blocks, false = gems
+  "lapisCost": 14,                  // lapis (blocks or gems per useBlocks) to unlock the option; surplus buys book protection
   "bookConsumeChance": 0.5,         // chance a landed enchant eats one of its source books (0–1)
   "bookProtectionEnabled": true,    // whether surplus lapis can protect books at all
   "protectionPerBlock": 0.02,       // protection per surplus lapis block, 0–1 (0.02 = 2%)
@@ -111,9 +114,9 @@ the real file is plain JSON):
 
   // ── Community links (blank = shown as "coming soon") ──
   "linkGithub": "https://github.com/LunixiaLIVE/chiseledEnchants",
-  "linkModrinth": "https://modrinth.com/project/chiseledenchants",
-  "linkCurseforge": "",             // still in the works
-  "linkDiscord": ""
+  "linkModrinth": "https://modrinth.com/mod/chiseledenchants",
+  "linkCurseforge": "https://www.curseforge.com/minecraft/mc-mods/chiseledenchants-multi",
+  "linkDiscord": "https://discord.gg/J9QnJWDFB3"
 }
 ```
 
