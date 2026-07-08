@@ -125,6 +125,11 @@ the real file is plain JSON):
 > — flip any to `false` to bar it. Edit the file and run `/cench reload`; the next guide book made reflects
 > the new numbers automatically.
 
+> [!NOTE]
+> **Admin commands** (op / gamemaster): `/cench reload` applies config changes live, and `/cench reset` writes
+> a brand-new default config (backing up the old one to `chiseledenchants.json.bak`) — then `/cench reload` to
+> apply it. Handy for getting back to a clean slate after experimenting.
+
 ### 🔓 What counts as a targeting table — `requireSpecialTable` + `craftOnlyTable`
 
 These two options decide which enchanting tables do targeted enchanting, from a strict crafted gate to
