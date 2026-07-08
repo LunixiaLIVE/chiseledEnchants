@@ -13,6 +13,7 @@ import java.io.Reader;
 import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.Map;
 import java.util.TreeMap;
 
@@ -216,6 +217,30 @@ public class ModConfig {
             GSON.toJson(instance, writer);
         } catch (IOException e) {
             ChiseledEnchantsCommon.LOGGER.warn("[chiseledEnchants] Failed to save config: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Write a brand-new DEFAULT config to disk (whitelist filled from the live registry), backing the old file
+     * up to {@code chiseledenchants.json.bak}. Does NOT touch the running config — the admin applies it with
+     * {@code /cench reload}. Backing store for the {@code /cench reset} command.
+     */
+    public static void writeFreshDefaults(RegistryAccess access) {
+        Path path = configPath();
+        try {
+            if (Files.exists(path)) {
+                Files.copy(path, path.resolveSibling("chiseledenchants.json.bak"), StandardCopyOption.REPLACE_EXISTING);
+            }
+        } catch (IOException e) {
+            ChiseledEnchantsCommon.LOGGER.warn("[chiseledEnchants] Failed to back up config: {}", e.getMessage());
+        }
+        ModConfig fresh = new ModConfig();
+        Registry<Enchantment> reg = access.lookupOrThrow(Registries.ENCHANTMENT);
+        for (Identifier id : reg.keySet()) fresh.enchantWhitelist.put(id.toString(), Boolean.TRUE);
+        try (Writer writer = Files.newBufferedWriter(path)) {
+            GSON.toJson(fresh, writer);
+        } catch (IOException e) {
+            ChiseledEnchantsCommon.LOGGER.warn("[chiseledEnchants] Failed to write default config: {}", e.getMessage());
         }
     }
 }

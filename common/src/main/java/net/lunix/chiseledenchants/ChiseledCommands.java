@@ -64,7 +64,10 @@ public final class ChiseledCommands {
                                         .executes(ctx -> find(ctx, StringArgumentType.getString(ctx, "enchant")))))
                         .then(Commands.literal("reload")
                                 .requires(src -> src.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER))
-                                .executes(ChiseledCommands::reload)));
+                                .executes(ChiseledCommands::reload))
+                        .then(Commands.literal("reset")
+                                .requires(src -> src.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER))
+                                .executes(ChiseledCommands::reset)));
         dispatcher.register(Commands.literal("cench").redirect(root));
     }
 
@@ -301,6 +304,15 @@ public final class ChiseledCommands {
         ModConfig.load();
         ctx.getSource().sendSuccess(
                 () -> Component.literal("chiseledEnchants config reloaded.").withStyle(ChatFormatting.GREEN), true);
+        return 1;
+    }
+
+    /** Write a fresh default config (old one backed up to .bak); the admin then applies it with /cench reload. */
+    private static int reset(CommandContext<CommandSourceStack> ctx) {
+        ModConfig.writeFreshDefaults(ctx.getSource().getServer().registryAccess());
+        ctx.getSource().sendSuccess(() -> Component.literal(
+                "Wrote a fresh default chiseledEnchants config (old one saved as chiseledenchants.json.bak). "
+                + "Run /cench reload to apply.").withStyle(ChatFormatting.GREEN), true);
         return 1;
     }
 
