@@ -36,7 +36,7 @@ public final class GuideBook {
     /** Build the guide as a signed written book (page content is server-authoritative → vanilla-client safe). */
     public static ItemStack create() {
         // Pull the live figures from the in-memory config so the book reflects THIS server's settings
-        // (an admin edits the config, runs /cench reload, and the next book made reads the new numbers).
+        // (an admin edits the config, runs /cench admin reload, and the next book made reads the new numbers).
         ModConfig cfg = ModConfig.get();
         int chanceDenom = ChiseledEnchanting.chanceDenom(cfg);
         int guarantee = chanceDenom;

@@ -111,7 +111,7 @@ public class ModConfig {
     /** Anvil XP-level cost to produce the guide. Default 1. */
     public int guideAnvilCost = 1;
 
-    // ── /cench about links — fill in and /cench reload; blank = shown as "coming soon" ──
+    // ── /cench about links — fill in and /cench admin reload; blank = shown as "coming soon" ──
     public String linkGithub = "https://github.com/LunixiaLIVE/chiseledEnchants";
     public String linkModrinth = "https://modrinth.com/mod/chiseledenchants";
     public String linkCurseforge = "https://www.curseforge.com/minecraft/mc-mods/chiseledenchants-multi";
@@ -241,7 +241,7 @@ public class ModConfig {
         return new ModConfig();
     }
 
-    // ── In-game config editing (the /cench set|get|whitelist commands edit the FILE; /cench reload applies) ──
+    // ── In-game config editing (the /cench set|get|whitelist commands edit the FILE; /cench admin reload applies) ──
 
     /** Every scalar setting name (int/boolean/double/String public field), sorted — for tab completion. */
     public static List<String> settingKeys() {
@@ -267,7 +267,7 @@ public class ModConfig {
         }
     }
 
-    /** Current value of a setting AS STORED IN THE FILE (what /cench reload would apply), or null if unknown. */
+    /** Current value of a setting AS STORED IN THE FILE (what /cench admin reload would apply), or null if unknown. */
     public static String getValue(String key) {
         if (typeOf(key) == null) return null;
         try {
@@ -319,7 +319,7 @@ public class ModConfig {
     /**
      * Write a brand-new DEFAULT config to disk (whitelist filled from the live registry), backing the old file
      * up to {@code chiseledenchants.json.bak}. Does NOT touch the running config — the admin applies it with
-     * {@code /cench reload}. Backing store for the {@code /cench reset} command.
+     * {@code /cench admin reload}. Backing store for the {@code /cench reset} command.
      */
     public static void writeFreshDefaults(RegistryAccess access) {
         Path path = configPath();

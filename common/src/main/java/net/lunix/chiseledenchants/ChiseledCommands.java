@@ -48,7 +48,7 @@ import java.util.Set;
  *                          in place of the one-enchant-per-slot vanilla tooltip)
  *   • table              — what the SHELVES are configured to apply (item-agnostic), with cost
  *   • find &lt;enchant&gt;  — trace colored particle threads from the table to each shelf holding it
- *   • reload             — reload the config from disk (op / gamemaster permission)
+ *   • admin &lt;sub&gt;      — op/gamemaster only: set / get / whitelist (edit the config file), reload, reset
  */
 public final class ChiseledCommands {
 
@@ -88,30 +88,28 @@ public final class ChiseledCommands {
                                 .then(Commands.argument("enchant", StringArgumentType.greedyString())
                                         .suggests(ENCHANTS)
                                         .executes(ctx -> find(ctx, StringArgumentType.getString(ctx, "enchant")))))
-                        .then(Commands.literal("reload")
+                        .then(Commands.literal("admin")
                                 .requires(src -> src.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER))
-                                .executes(ChiseledCommands::reload))
-                        .then(Commands.literal("reset")
-                                .requires(src -> src.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER))
-                                .executes(ChiseledCommands::reset))
-                        .then(Commands.literal("get")
-                                .requires(src -> src.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER))
-                                .then(Commands.argument("setting", StringArgumentType.word())
-                                        .suggests(SETTINGS)
-                                        .executes(ChiseledCommands::getSetting)))
-                        .then(Commands.literal("set")
-                                .requires(src -> src.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER))
-                                .then(Commands.argument("setting", StringArgumentType.word())
-                                        .suggests(SETTINGS)
-                                        .then(Commands.argument("value", StringArgumentType.greedyString())
-                                                .suggests(SETTING_VALUES)
-                                                .executes(ChiseledCommands::setSetting))))
-                        .then(Commands.literal("whitelist")
-                                .requires(src -> src.permissions().hasPermission(Permissions.COMMANDS_GAMEMASTER))
-                                .then(Commands.argument("enchant", StringArgumentType.word())
-                                        .suggests(ENCHANTS)
-                                        .then(Commands.argument("allowed", BoolArgumentType.bool())
-                                                .executes(ChiseledCommands::setWhitelist)))));
+                                .executes(ChiseledCommands::adminHelp)
+                                .then(Commands.literal("reload")
+                                        .executes(ChiseledCommands::reload))
+                                .then(Commands.literal("reset")
+                                        .executes(ChiseledCommands::reset))
+                                .then(Commands.literal("get")
+                                        .then(Commands.argument("setting", StringArgumentType.word())
+                                                .suggests(SETTINGS)
+                                                .executes(ChiseledCommands::getSetting)))
+                                .then(Commands.literal("set")
+                                        .then(Commands.argument("setting", StringArgumentType.word())
+                                                .suggests(SETTINGS)
+                                                .then(Commands.argument("value", StringArgumentType.greedyString())
+                                                        .suggests(SETTING_VALUES)
+                                                        .executes(ChiseledCommands::setSetting))))
+                                .then(Commands.literal("whitelist")
+                                        .then(Commands.argument("enchant", StringArgumentType.word())
+                                                .suggests(ENCHANTS)
+                                                .then(Commands.argument("allowed", BoolArgumentType.bool())
+                                                        .executes(ChiseledCommands::setWhitelist))))));
         dispatcher.register(Commands.literal("cench").redirect(root));
     }
 
@@ -344,6 +342,20 @@ public final class ChiseledCommands {
         return 1;
     }
 
+    /** `/cench admin` with no sub — list the admin subcommands. */
+    private static int adminHelp(CommandContext<CommandSourceStack> ctx) {
+        ctx.getSource().sendSuccess(() -> Component.literal("── chiseledEnchants admin ──").withStyle(ChatFormatting.GOLD), false);
+        for (String s : new String[]{
+                "/cench admin set <setting> <value> — change a setting (edits the config file)",
+                "/cench admin get <setting> — read a setting's value",
+                "/cench admin whitelist <enchant> <true|false> — toggle one enchant",
+                "/cench admin reload — apply the config file",
+                "/cench admin reset — regenerate a default config (backs up the old one)"}) {
+            ctx.getSource().sendSuccess(() -> Component.literal("  " + s).withStyle(ChatFormatting.GRAY), false);
+        }
+        return 1;
+    }
+
     private static int reload(CommandContext<CommandSourceStack> ctx) {
         ModConfig.load();
         ctx.getSource().sendSuccess(
@@ -351,12 +363,12 @@ public final class ChiseledCommands {
         return 1;
     }
 
-    /** Write a fresh default config (old one backed up to .bak); the admin then applies it with /cench reload. */
+    /** Write a fresh default config (old one backed up to .bak); the admin then applies it with /cench admin reload. */
     private static int reset(CommandContext<CommandSourceStack> ctx) {
         ModConfig.writeFreshDefaults(ctx.getSource().getServer().registryAccess());
         ctx.getSource().sendSuccess(() -> Component.literal(
                 "Wrote a fresh default chiseledEnchants config (old one saved as chiseledenchants.json.bak). "
-                + "Run /cench reload to apply.").withStyle(ChatFormatting.GREEN), true);
+                + "Run /cench admin reload to apply.").withStyle(ChatFormatting.GREEN), true);
         return 1;
     }
 
@@ -375,7 +387,7 @@ public final class ChiseledCommands {
         return 1;
     }
 
-    /** Set a config setting in the FILE (not applied until /cench reload). */
+    /** Set a config setting in the FILE (not applied until /cench admin reload). */
     private static int setSetting(CommandContext<CommandSourceStack> ctx) {
         String key = StringArgumentType.getString(ctx, "setting");
         String value = StringArgumentType.getString(ctx, "value");
@@ -383,7 +395,7 @@ public final class ChiseledCommands {
             ctx.getSource().sendSuccess(() -> Component.literal("Set ")
                     .withStyle(ChatFormatting.GREEN)
                     .append(Component.literal(key + " = " + value).withStyle(ChatFormatting.WHITE))
-                    .append(Component.literal(" in the config. Run /cench reload to apply.").withStyle(ChatFormatting.GREEN)), true);
+                    .append(Component.literal(" in the config. Run /cench admin reload to apply.").withStyle(ChatFormatting.GREEN)), true);
             return 1;
         }
         ctx.getSource().sendFailure(Component.literal("Couldn't set '" + key
@@ -391,7 +403,7 @@ public final class ChiseledCommands {
         return 0;
     }
 
-    /** Toggle a per-enchant whitelist entry in the FILE (not applied until /cench reload). */
+    /** Toggle a per-enchant whitelist entry in the FILE (not applied until /cench admin reload). */
     private static int setWhitelist(CommandContext<CommandSourceStack> ctx) {
         String ench = StringArgumentType.getString(ctx, "enchant");
         boolean allowed = BoolArgumentType.getBool(ctx, "allowed");
@@ -399,7 +411,7 @@ public final class ChiseledCommands {
         ctx.getSource().sendSuccess(() -> Component.literal("Whitelist: ")
                 .withStyle(ChatFormatting.GREEN)
                 .append(Component.literal(ench + " = " + allowed).withStyle(ChatFormatting.WHITE))
-                .append(Component.literal(" in the config. Run /cench reload to apply.").withStyle(ChatFormatting.GREEN)), true);
+                .append(Component.literal(" in the config. Run /cench admin reload to apply.").withStyle(ChatFormatting.GREEN)), true);
         return 1;
     }
 
