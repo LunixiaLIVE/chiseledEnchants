@@ -358,8 +358,17 @@ public final class ChiseledCommands {
 
     private static int reload(CommandContext<CommandSourceStack> ctx) {
         ModConfig.load();
+        // Rebuild the config-driven crafting recipe live too, so edited ingredients apply without a datapack /reload.
+        // finalizeRecipeLoading refreshes the recipe-book caches; reloadResources() pushes them (and the recipe) to
+        // every client, so the recipe book display updates without a relog.
+        var server = ctx.getSource().getServer();
+        if (server.getRecipeManager() instanceof RecipeRebuilder r) {
+            r.chiseledEnchants$rebuildRecipe(ctx.getSource().getLevel().enabledFeatures());
+            server.getPlayerList().reloadResources();
+        }
         ctx.getSource().sendSuccess(
-                () -> Component.literal("chiseledEnchants config reloaded.").withStyle(ChatFormatting.GREEN), true);
+                () -> Component.literal("chiseledEnchants config reloaded (mechanics + crafting recipe + recipe book).")
+                        .withStyle(ChatFormatting.GREEN), true);
         return 1;
     }
 
