@@ -60,7 +60,7 @@ signed book, so it renders on a **vanilla client** with no resource pack.
 ## ⚙️ For server admins
 
 Everything is tunable, and it's meant to be. The config lives at **`config/chiseledenchants.json`** and
-**hot-reloads with `/cench reload`** — no restart needed. All chance and protection values are **0–1
+**hot-reloads with `/cench admin reload`** — no restart needed. All chance and protection values are **0–1
 fractions** (e.g. `0.5` = 50%). Here's the full file with defaults (grouped and annotated for readability;
 the real file is plain JSON):
 
@@ -122,17 +122,17 @@ the real file is plain JSON):
 
 > [!TIP]
 > `enchantWhitelist` fills itself in on first launch with **every** enchant (modded included) set to `true`
-> — flip any to `false` to bar it. Edit the file and run `/cench reload`; the next guide book made reflects
+> — flip any to `false` to bar it. Edit the file and run `/cench admin reload`; the next guide book made reflects
 > the new numbers automatically.
 
 > [!NOTE]
 > **Admin commands** (op / gamemaster) — edit the config in-game, no text editor needed. All of them change the
-> config *file*; `/cench reload` applies:
-> - **`/cench set <setting> <value>`** — set any setting (tab-completes every key; booleans suggest `true`/`false`).
-> - **`/cench get <setting>`** — read a setting's current value.
-> - **`/cench whitelist <enchant> <true|false>`** — toggle one enchant on/off.
-> - **`/cench reload`** — apply the current config file.
-> - **`/cench reset`** — regenerate a brand-new default config (backs the old one up to `chiseledenchants.json.bak`), then `/cench reload`.
+> config *file*; `/cench admin reload` applies:
+> - **`/cench admin set <setting> <value>`** — set any setting (tab-completes every key; booleans suggest `true`/`false`).
+> - **`/cench admin get <setting>`** — read a setting's current value.
+> - **`/cench admin whitelist <enchant> <true|false>`** — toggle one enchant on/off.
+> - **`/cench admin reload`** — apply the current config file.
+> - **`/cench admin reset`** — regenerate a brand-new default config (backs the old one up to `chiseledenchants.json.bak`), then `/cench admin reload`.
 
 ### 🔓 What counts as a targeting table — `requireSpecialTable` + `craftOnlyTable`
 
