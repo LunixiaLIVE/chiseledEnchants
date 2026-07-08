@@ -126,9 +126,13 @@ the real file is plain JSON):
 > the new numbers automatically.
 
 > [!NOTE]
-> **Admin commands** (op / gamemaster): `/cench reload` applies config changes live, and `/cench reset` writes
-> a brand-new default config (backing up the old one to `chiseledenchants.json.bak`) — then `/cench reload` to
-> apply it. Handy for getting back to a clean slate after experimenting.
+> **Admin commands** (op / gamemaster) — edit the config in-game, no text editor needed. All of them change the
+> config *file*; `/cench reload` applies:
+> - **`/cench set <setting> <value>`** — set any setting (tab-completes every key; booleans suggest `true`/`false`).
+> - **`/cench get <setting>`** — read a setting's current value.
+> - **`/cench whitelist <enchant> <true|false>`** — toggle one enchant on/off.
+> - **`/cench reload`** — apply the current config file.
+> - **`/cench reset`** — regenerate a brand-new default config (backs the old one up to `chiseledenchants.json.bak`), then `/cench reload`.
 
 ### 🔓 What counts as a targeting table — `requireSpecialTable` + `craftOnlyTable`
 
