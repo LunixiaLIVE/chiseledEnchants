@@ -13,6 +13,7 @@ import net.minecraft.commands.Commands;
 import net.minecraft.commands.SharedSuggestionProvider;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
+import net.minecraft.core.Registry;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.Identifier;
 import net.minecraft.network.chat.ClickEvent;
@@ -23,6 +24,7 @@ import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.server.permissions.Permissions;
 import net.minecraft.util.Mth;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.enchantment.Enchantment;
 import net.minecraft.world.level.ClipContext;
@@ -58,10 +60,17 @@ public final class ChiseledCommands {
     private static final SuggestionProvider<CommandSourceStack> SETTINGS =
             (ctx, b) -> SharedSuggestionProvider.suggest(ModConfig.settingKeys(), b);
 
-    /** Tab completion for a setting's value: true/false for booleans, else the current value as a starting point. */
+    /**
+     * Tab completion for a setting's value: true/false for booleans, every registered item id for recipe item
+     * settings (so you can't fat-finger one), else the current value as a starting point.
+     */
     private static final SuggestionProvider<CommandSourceStack> SETTING_VALUES = (ctx, b) -> {
         String key = StringArgumentType.getString(ctx, "setting");
         if (ModConfig.typeOf(key) == boolean.class) return SharedSuggestionProvider.suggest(List.of("true", "false"), b);
+        if (ModConfig.isItemSetting(key)) {
+            return SharedSuggestionProvider.suggestResource(
+                    ctx.getSource().getServer().registryAccess().lookupOrThrow(Registries.ITEM).keySet(), b);
+        }
         String cur = ModConfig.getValue(key);
         return cur == null ? b.buildFuture() : SharedSuggestionProvider.suggest(List.of(cur), b);
     };
@@ -102,6 +111,7 @@ public final class ChiseledCommands {
                                 .then(Commands.literal("set")
                                         .then(Commands.argument("setting", StringArgumentType.word())
                                                 .suggests(SETTINGS)
+                                                .executes(ChiseledCommands::setSettingBlank)
                                                 .then(Commands.argument("value", StringArgumentType.greedyString())
                                                         .suggests(SETTING_VALUES)
                                                         .executes(ChiseledCommands::setSetting))))
@@ -398,18 +408,67 @@ public final class ChiseledCommands {
 
     /** Set a config setting in the FILE (not applied until /cench admin reload). */
     private static int setSetting(CommandContext<CommandSourceStack> ctx) {
+        CommandSourceStack src = ctx.getSource();
         String key = StringArgumentType.getString(ctx, "setting");
         String value = StringArgumentType.getString(ctx, "value");
+        if (ModConfig.typeOf(key) == null) {
+            src.sendFailure(Component.literal("Unknown setting '" + key + "'."));
+            return 0;
+        }
+        // Recipe item settings: accept "blank"/"none"/"" to clear, otherwise require a REGISTERED item id and
+        // store it canonically (so a typo can't silently drop the ingredient at recipe-build time).
+        if (ModConfig.isItemSetting(key)) {
+            String v = value.trim();
+            if (v.isEmpty() || v.equals("\"\"") || v.equalsIgnoreCase("blank") || v.equalsIgnoreCase("none")) {
+                return applyItemSetting(src, key, "");
+            }
+            Identifier id = Identifier.tryParse(v);
+            Registry<Item> items = src.getServer().registryAccess().lookupOrThrow(Registries.ITEM);
+            if (id == null || !items.containsKey(id)) {
+                src.sendFailure(Component.literal("Unknown item '" + value
+                        + "' — pick a registered item id (it tab-completes)."));
+                return 0;
+            }
+            return applyItemSetting(src, key, id.toString());
+        }
         if (ModConfig.setInFile(key, value)) {
-            ctx.getSource().sendSuccess(() -> Component.literal("Set ")
+            src.sendSuccess(() -> Component.literal("Set ")
                     .withStyle(ChatFormatting.GREEN)
                     .append(Component.literal(key + " = " + value).withStyle(ChatFormatting.WHITE))
                     .append(Component.literal(" in the config. Run /cench admin reload to apply.").withStyle(ChatFormatting.GREEN)), true);
             return 1;
         }
-        ctx.getSource().sendFailure(Component.literal("Couldn't set '" + key
-                + "' — unknown setting, or the value isn't valid for its type."));
+        src.sendFailure(Component.literal("Couldn't set '" + key
+                + "' — the value isn't valid for its type."));
         return 0;
+    }
+
+    /** No value given for {@code set}: clear a recipe item setting to an empty slot; other settings need a value. */
+    private static int setSettingBlank(CommandContext<CommandSourceStack> ctx) {
+        CommandSourceStack src = ctx.getSource();
+        String key = StringArgumentType.getString(ctx, "setting");
+        Class<?> t = ModConfig.typeOf(key);
+        if (t == null) {
+            src.sendFailure(Component.literal("Unknown setting '" + key + "'."));
+            return 0;
+        }
+        if (!ModConfig.isItemSetting(key)) {
+            String hint = (t == String.class) ? " (pass \"blank\" as the value to clear it)" : "";
+            src.sendFailure(Component.literal("Setting '" + key + "' needs a value" + hint + "."));
+            return 0;
+        }
+        return applyItemSetting(src, key, "");   // no item → empty slot
+    }
+
+    /** Store a recipe item id ("" = empty slot) in the config file and report it. */
+    private static int applyItemSetting(CommandSourceStack src, String key, String itemId) {
+        ModConfig.setInFile(key, itemId);
+        String shown = itemId.isEmpty() ? "(empty slot)" : itemId;
+        src.sendSuccess(() -> Component.literal("Set ")
+                .withStyle(ChatFormatting.GREEN)
+                .append(Component.literal(key + " = " + shown).withStyle(ChatFormatting.WHITE))
+                .append(Component.literal(" in the config. Run /cench admin reload to apply.").withStyle(ChatFormatting.GREEN)), true);
+        return 1;
     }
 
     /** Toggle a per-enchant whitelist entry in the FILE (not applied until /cench admin reload). */

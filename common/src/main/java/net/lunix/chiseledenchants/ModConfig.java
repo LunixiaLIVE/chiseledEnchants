@@ -267,6 +267,15 @@ public class ModConfig {
         }
     }
 
+    /** Settings whose value is an item id — these tab-complete registered items and clear to an empty slot with no value. */
+    private static final java.util.Set<String> ITEM_SETTINGS = java.util.Set.of(
+            "recipeReplacesBook", "recipeReplacesDiamond", "recipeReplacesObsidian", "recipeReplacesEmptySlots");
+
+    /** True if {@code key} names a recipe item-id setting (String holding a {@code namespace:item} id). */
+    public static boolean isItemSetting(String key) {
+        return ITEM_SETTINGS.contains(key);
+    }
+
     /** Current value of a setting AS STORED IN THE FILE (what /cench admin reload would apply), or null if unknown. */
     public static String getValue(String key) {
         if (typeOf(key) == null) return null;
