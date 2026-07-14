@@ -19,14 +19,14 @@ issueTrackerURL = "https://github.com/LunixiaLIVE/chiseledEnchants/issues"
 [[dependencies.chiseledenchants]]
     modId = "neoforge"
     type = "required"
-    versionRange = "[26.1,26.2)"
+    versionRange = "[26.2,26.3)"
     ordering = "NONE"
     side = "BOTH"
 
 [[dependencies.chiseledenchants]]
     modId = "minecraft"
     type = "required"
-    versionRange = "[26.1,26.2)"
+    versionRange = "[26.2,26.3)"
     ordering = "NONE"
     side = "BOTH"
 
