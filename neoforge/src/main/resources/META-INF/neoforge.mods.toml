@@ -1,6 +1,7 @@
 modLoader = "javafml"
 loaderVersion = "[1,)"
 license = "MIT"
+issueTrackerURL = "https://github.com/LunixiaLIVE/chiseledEnchants/issues"
 
 [[mixins]]
     config = "chiseledenchants.common.mixins.json"
@@ -9,6 +10,10 @@ license = "MIT"
     modId = "chiseledenchants"
     version = "${version}"
     displayName = "chiseledEnchants"
+    authors = "LunixiaLIVE"
+    credits = "LunixiaLIVE"
+    displayURL = "https://github.com/LunixiaLIVE/Lunixia-Minecraft-QOL-Mods"
+    logoFile = "assets/chiseledenchants/icon.png"
     description = "Targeted enchanting: stock chiseled bookshelves with single-enchant books to guarantee specific enchantments at the enchanting table."
 
 [[dependencies.chiseledenchants]]

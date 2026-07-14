@@ -525,7 +525,7 @@ public final class ChiseledEnchanting {
 
     /**
      * The crafted gate: an enchanting table whose custom name matches {@code specialTableName}. When
-     * {@code craftOnlyTable}, the name must also carry the RARE (aqua) color the recipe stamps — a vanilla
+     * {@code craftOnlyTable}, the name must also carry the EPIC light-purple color the recipe stamps — a vanilla
      * anvil can't color a rename, so only the crafted table qualifies.
      */
     private static boolean isSpecialTable(Level level, BlockPos tablePos, ModConfig cfg) {
@@ -578,6 +578,7 @@ public final class ChiseledEnchanting {
                 String base = (cfg.tableOpenNotice == null || cfg.tableOpenNotice.isBlank())
                         ? (cfg.specialTableName == null ? "Chiseled Enchanter" : cfg.specialTableName)
                         : cfg.tableOpenNotice.trim();
+                base = base.replace("{lapis}", lapisNoun(cfg));   // "blocks"/"gems" from the in-memory config
                 TableNotice.setBar(player, Component.literal(base).withStyle(ChatFormatting.GREEN),
                         BossEvent.BossBarColor.GREEN);
             }

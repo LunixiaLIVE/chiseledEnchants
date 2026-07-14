@@ -4,9 +4,12 @@
   "version": "${version}",
   "name": "chiseledEnchants",
   "description": "Targeted enchanting: stock chiseled bookshelves with single-enchant books to guarantee specific enchantments at the enchanting table.",
+  "icon": "assets/chiseledenchants/icon.png",
   "authors": ["LunixiaLIVE"],
   "contact": {
-    "sources": "https://github.com/LunixiaLIVE/chiseledEnchants"
+    "homepage": "https://github.com/LunixiaLIVE/Lunixia-Minecraft-QOL-Mods",
+    "sources": "https://github.com/LunixiaLIVE/chiseledEnchants",
+    "issues": "https://github.com/LunixiaLIVE/chiseledEnchants/issues"
   },
   "license": "MIT",
   "environment": "*",
@@ -22,6 +25,15 @@
     "fabricloader": ">=${loader_version}",
     "fabric-api": "*",
     "minecraft": "26.1.x"
+  },
+  "custom": {
+    "modmenu": {
+      "links": {
+        "text.chiseledenchants.discord": "https://discord.gg/J9QnJWDFB3",
+        "text.chiseledenchants.modrinth": "https://modrinth.com/mod/chiseledenchants",
+        "text.chiseledenchants.curseforge": "https://www.curseforge.com/minecraft/mc-mods/chiseledenchants-multi"
+      }
+    }
   }
 }
 

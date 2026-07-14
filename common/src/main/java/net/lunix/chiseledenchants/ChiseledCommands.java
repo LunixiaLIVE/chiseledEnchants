@@ -147,8 +147,6 @@ public final class ChiseledCommands {
         }
         src.sendSuccess(() -> Component.literal("Links:").withStyle(ChatFormatting.GRAY), false);
         src.sendSuccess(() -> linkLine("GitHub", cfg.linkGithub), false);
-        src.sendSuccess(() -> linkLine("Modrinth", cfg.linkModrinth), false);
-        src.sendSuccess(() -> linkLine("CurseForge", cfg.linkCurseforge), false);
         src.sendSuccess(() -> linkLine("Discord", cfg.linkDiscord), false);
         return 1;
     }

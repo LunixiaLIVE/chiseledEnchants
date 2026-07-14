@@ -59,7 +59,7 @@ public class ModConfig {
      */
     public String specialTableName = "Chiseled Enchanter";
     /**
-     * Craft-only: require the table's name to carry the RARE (aqua) color the recipe stamps — a vanilla anvil
+     * Craft-only: require the table's name to carry the EPIC light-purple color the recipe stamps — a vanilla anvil
      * can't add color to a rename, so it can't forge the table. false = any table named specialTableName works
      * (anvil-rename allowed). Default true.
      */
@@ -78,8 +78,10 @@ public class ModConfig {
     /**
      * Text shown on the GREEN "ready" status boss bar above the modded table (it turns RED with a reason when
      * the setup has a problem — mixed shelves, a conflict/tie, or a below-max book). Blank = the table's name.
+     * The token {@code {lapis}} is replaced at display time with the current lapis noun ("blocks" or "gems") per
+     * {@link #useBlocks}, so the bar always matches what the table actually takes.
      */
-    public String tableOpenNotice = "This table runs on lapis blocks";
+    public String tableOpenNotice = "This table runs on lapis {lapis}";
 
     // ── Scan geometry (§2) — how much of the surrounding shelves the mod reads for targeting.
     //    Vanilla POWER is untouched (its own fixed ring, capped at 15); this only widens book capacity. ──
@@ -113,8 +115,6 @@ public class ModConfig {
 
     // ── /cench about links — fill in and /cench admin reload; blank = shown as "coming soon" ──
     public String linkGithub = "https://github.com/LunixiaLIVE/chiseledEnchants";
-    public String linkModrinth = "https://modrinth.com/mod/chiseledenchants";
-    public String linkCurseforge = "https://www.curseforge.com/minecraft/mc-mods/chiseledenchants-multi";
     public String linkDiscord = "https://discord.gg/J9QnJWDFB3";
 
     // ── Modded-table economy (§5/§6) ──
@@ -213,6 +213,10 @@ public class ModConfig {
                 ChiseledEnchantsCommon.LOGGER.warn("[chiseledEnchants] Failed to load config: {}", e.getMessage());
                 instance = new ModConfig();
             }
+        }
+        // migrate the pre-{lapis} default so the ready bar reflects the configured lapis type, not a fixed word
+        if ("This table runs on lapis blocks".equals(instance.tableOpenNotice)) {
+            instance.tableOpenNotice = "This table runs on lapis {lapis}";
         }
         save();
     }
