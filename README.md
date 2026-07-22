@@ -8,16 +8,16 @@
 
 [![](https://img.shields.io/badge/Download_on-Modrinth-00AF5C?style=for-the-badge&logo=modrinth&logoColor=white)](https://modrinth.com/mod/chiseledenchants)&nbsp;[![](https://img.shields.io/badge/Download_on-CurseForge-F16436?style=for-the-badge&logo=curseforge&logoColor=white)](https://www.curseforge.com/minecraft/mc-mods/chiseledenchants-multi)
 
-![](https://img.shields.io/badge/Minecraft-26.x-62B47A?style=flat-square) ![](https://img.shields.io/badge/Side-Single_Player_%26_Server-8E44AD?style=flat-square) ![](https://img.shields.io/badge/Fabric_API-required_on_Fabric-4A90D9?style=flat-square) ![](https://img.shields.io/badge/License-MIT-blue?style=flat-square) ![](https://img.shields.io/badge/Status-feature--complete-brightgreen?style=flat-square)
+![](https://img.shields.io/badge/Minecraft-26.x-62B47A?style=flat-square) ![](https://img.shields.io/badge/Side-Single_Player_%26_Server-8E44AD?style=flat-square) ![](https://img.shields.io/badge/Fabric_API-required_on_Fabric-4A90D9?style=flat-square) ![](https://img.shields.io/badge/License-MIT-blue?style=flat-square) ![](https://img.shields.io/badge/Status-1.0.0_released-brightgreen?style=flat-square)
 
 </div>
 
 ---
 
 > [!NOTE]
-> **Feature-complete, pre-release (1.0.0).** The full modded-table takeover is in — separate XP/lapis-block
-> economy, the vanilla roll suppressed, blank-on-error, live status bar. In testing ahead of a public
-> release. Per-version code and changelog live on the [`multi_*`](#-versions--downloads) branches.
+> **Released — v1.0.0.** The full modded-table takeover is in — separate XP/lapis-block
+> economy, the vanilla roll suppressed, blank-on-error, live status bar. Available now on
+> Modrinth and CurseForge. Per-version code and changelog live on the [`multi_*`](#-versions--downloads) branches.
 
 ## ✨ What it does
 
@@ -114,8 +114,6 @@ the real file is plain JSON):
 
   // ── Community links (blank = shown as "coming soon") ──
   "linkGithub": "https://github.com/LunixiaLIVE/chiseledEnchants",
-  "linkModrinth": "https://modrinth.com/mod/chiseledenchants",
-  "linkCurseforge": "https://www.curseforge.com/minecraft/mc-mods/chiseledenchants-multi",
   "linkDiscord": "https://discord.gg/J9QnJWDFB3"
 }
 ```
